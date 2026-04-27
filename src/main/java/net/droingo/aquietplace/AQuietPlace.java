@@ -1,5 +1,6 @@
 package net.droingo.aquietplace;
 
+import net.droingo.aquietplace.command.AQuietPlaceCommands;
 import net.droingo.aquietplace.noise.NoiseSystem;
 import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
@@ -11,7 +12,9 @@ public class AQuietPlace implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        LOGGER.info("Initializing A Quiet Place Mod, Prepare for Silence");
+        LOGGER.info("Initializing A Quiet Place");
+
         NoiseSystem.initialize();
+        AQuietPlaceCommands.register();
     }
 }
