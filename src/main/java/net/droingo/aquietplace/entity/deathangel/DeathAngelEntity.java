@@ -1,5 +1,6 @@
 package net.droingo.aquietplace.entity.deathangel;
 
+import net.droingo.aquietplace.entity.deathangel.goal.InvestigateNoiseGoal;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
@@ -43,6 +44,9 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity {
     @Override
     protected void initGoals() {
         this.goalSelector.add(0, new SwimGoal(this));
+
+        // First real sound-hunting behavior.
+        this.goalSelector.add(2, new InvestigateNoiseGoal(this, 1.15));
 
         // Temporary basic movement so we can confirm pathfinding and animations work.
         this.goalSelector.add(5, new WanderAroundFarGoal(this, 0.85));
