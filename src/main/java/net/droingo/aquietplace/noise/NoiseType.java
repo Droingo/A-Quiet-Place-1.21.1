@@ -1,4 +1,39 @@
 package net.droingo.aquietplace.noise;
 
-public class NoiseType {
+public enum NoiseType {
+    UNKNOWN,
+
+    PLAYER_WALK,
+    PLAYER_SPRINT,
+    PLAYER_SNEAK,
+    PLAYER_JUMP,
+    PLAYER_LAND,
+    PLAYER_SWIM,
+
+    BLOCK_BREAK,
+    BLOCK_PLACE,
+
+    DOOR_OPEN,
+    DOOR_CLOSE,
+    TRAPDOOR_OPEN,
+    TRAPDOOR_CLOSE,
+    FENCE_GATE_OPEN,
+    FENCE_GATE_CLOSE,
+
+    CONTAINER_OPEN,
+    CONTAINER_CLOSE,
+
+    BUTTON_PRESS,
+    LEVER_TOGGLE,
+
+    EAT,
+    ATTACK,
+    DAMAGE,
+    DROP_ITEM,
+
+    VOICE,
+
+    DECOY,
+    TRAP,
+    COMMAND_DEBUG
 }
