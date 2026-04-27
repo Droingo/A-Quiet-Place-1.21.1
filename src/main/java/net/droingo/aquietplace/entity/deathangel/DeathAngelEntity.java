@@ -7,9 +7,15 @@ import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.World;
+import software.bernie.geckolib.animatable.GeoEntity;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animation.AnimatableManager;
+import software.bernie.geckolib.util.GeckoLibUtil;
 
-public class DeathAngelEntity extends HostileEntity {
-    public DeathAngelEntity(EntityType<? extends HostileEntity> entityType, World world) {
+public class DeathAngelEntity extends HostileEntity implements GeoEntity {
+    private final AnimatableInstanceCache geoCache = GeckoLibUtil.createInstanceCache(this);
+
+    public DeathAngelEntity(EntityType<? extends DeathAngelEntity> entityType, World world) {
         super(entityType, world);
         this.experiencePoints = 25;
     }
@@ -25,7 +31,7 @@ public class DeathAngelEntity extends HostileEntity {
 
     @Override
     protected void initGoals() {
-        // Goals will be added in the next AI steps.
+        // Goals will be added after the model is rendering correctly.
     }
 
     @Override
@@ -38,12 +44,22 @@ public class DeathAngelEntity extends HostileEntity {
                     this.getX(),
                     this.getY() + 1.0,
                     this.getZ(),
-                    2,
-                    0.35,
-                    0.8,
-                    0.35,
-                    0.01
+                    1,
+                    0.25,
+                    0.6,
+                    0.25,
+                    0.005
             );
         }
+    }
+
+    @Override
+    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
+        // Animation controllers will be added after we confirm the model renders.
+    }
+
+    @Override
+    public AnimatableInstanceCache getAnimatableInstanceCache() {
+        return this.geoCache;
     }
 }
