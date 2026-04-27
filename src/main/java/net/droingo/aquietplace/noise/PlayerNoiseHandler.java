@@ -23,7 +23,8 @@ public final class PlayerNoiseHandler {
     private static final int HUD_PACKET_INTERVAL_TICKS = 2;
 
     private static final double MIN_HORIZONTAL_DISTANCE_PER_TICK = 0.015;
-    private static final float NOISE_LEVEL_DECAY_PER_TICK = 0.035f;
+    private static final float NOISE_LEVEL_DECAY_PER_TICK = 0.025f;
+    private static final int HUD_NOISE_HOLD_TICKS = 12;
 
     private PlayerNoiseHandler() {
     }
@@ -65,8 +66,7 @@ public final class PlayerNoiseHandler {
         handleMovementNoise(player, state, onGround, horizontalDistanceThisTick);
 
         sendNoiseHudUpdate(player, state);
-
-        state.currentNoiseLevel = Math.max(0.0f, state.currentNoiseLevel - NOISE_LEVEL_DECAY_PER_TICK);
+        tickHudNoiseDecay(state);
 
         state.wasOnGround = onGround;
         state.lastPosition = currentPosition;
@@ -84,6 +84,15 @@ public final class PlayerNoiseHandler {
         if (state.hudPacketCooldownTicks > 0) {
             state.hudPacketCooldownTicks--;
         }
+    }
+
+    private static void tickHudNoiseDecay(PlayerNoiseState state) {
+        if (state.noiseHoldTicks > 0) {
+            state.noiseHoldTicks--;
+            return;
+        }
+
+        state.currentNoiseLevel = Math.max(0.0f, state.currentNoiseLevel - NOISE_LEVEL_DECAY_PER_TICK);
     }
 
     private static double getHorizontalDistance(Vec3d previousPosition, Vec3d currentPosition) {
@@ -121,7 +130,7 @@ public final class PlayerNoiseHandler {
                     true
             );
 
-            state.currentNoiseLevel = Math.max(state.currentNoiseLevel, 0.15f);
+            setHudNoiseLevel(state, 0.15f);
             state.movementNoiseCooldownTicks = SNEAK_NOISE_INTERVAL_TICKS;
             return;
         }
@@ -136,7 +145,7 @@ public final class PlayerNoiseHandler {
                     true
             );
 
-            state.currentNoiseLevel = Math.max(state.currentNoiseLevel, 1.0f);
+            setHudNoiseLevel(state, 1.0f);
             state.movementNoiseCooldownTicks = SPRINT_NOISE_INTERVAL_TICKS;
             return;
         }
@@ -150,7 +159,7 @@ public final class PlayerNoiseHandler {
                 true
         );
 
-        state.currentNoiseLevel = Math.max(state.currentNoiseLevel, 0.45f);
+        setHudNoiseLevel(state, 0.45f);
         state.movementNoiseCooldownTicks = WALK_NOISE_INTERVAL_TICKS;
     }
 
@@ -178,7 +187,7 @@ public final class PlayerNoiseHandler {
                 true
         );
 
-        state.currentNoiseLevel = Math.max(state.currentNoiseLevel, 0.65f);
+        setHudNoiseLevel(state, 0.65f);
     }
 
     private static void handleLandingNoise(
@@ -208,7 +217,21 @@ public final class PlayerNoiseHandler {
                 true
         );
 
-        state.currentNoiseLevel = Math.max(state.currentNoiseLevel, strength);
+        setHudNoiseLevel(state, strength);
+    }
+
+    public static void addHudNoise(ServerPlayerEntity player, float noiseLevel) {
+        PlayerNoiseState state = PLAYER_STATES.computeIfAbsent(
+                player.getUuid(),
+                uuid -> new PlayerNoiseState(player.getPos())
+        );
+
+        setHudNoiseLevel(state, noiseLevel);
+    }
+
+    private static void setHudNoiseLevel(PlayerNoiseState state, float noiseLevel) {
+        state.currentNoiseLevel = Math.max(state.currentNoiseLevel, noiseLevel);
+        state.noiseHoldTicks = HUD_NOISE_HOLD_TICKS;
     }
 
     private static void emitPlayerNoise(
@@ -254,6 +277,7 @@ public final class PlayerNoiseHandler {
         private int airTicks;
         private int movementNoiseCooldownTicks;
         private int hudPacketCooldownTicks;
+        private int noiseHoldTicks;
         private float currentNoiseLevel;
         private Vec3d lastPosition;
 

@@ -9,6 +9,7 @@ import net.minecraft.util.math.Vec3d;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.UUID;
 
 public class InvestigateNoiseGoal extends Goal {
     private final DeathAngelEntity deathAngel;
@@ -16,12 +17,16 @@ public class InvestigateNoiseGoal extends Goal {
 
     private Vec3d targetPosition;
     private long targetNoiseGameTime = -1L;
+    private UUID targetSourceUuid;
+    private float targetStrength;
+    private float targetRadius;
 
     private long lastHandledNoiseGameTime = -1L;
 
     private int investigateTicks;
     private int repathCooldownTicks;
     private int listenDelayTicks;
+    private int newNoiseCheckCooldownTicks;
 
     public InvestigateNoiseGoal(DeathAngelEntity deathAngel, double movementSpeed) {
         this.deathAngel = deathAngel;
@@ -35,6 +40,10 @@ public class InvestigateNoiseGoal extends Goal {
             return false;
         }
 
+        if (this.deathAngel.hasNoisyTargetMemory()) {
+            return false;
+        }
+
         if (!(this.deathAngel.getWorld() instanceof ServerWorld serverWorld)) {
             return false;
         }
@@ -44,14 +53,16 @@ public class InvestigateNoiseGoal extends Goal {
             return false;
         }
 
-        this.targetPosition = bestNoise.position();
-        this.targetNoiseGameTime = bestNoise.gameTime();
-
+        this.setTargetNoise(bestNoise);
         return true;
     }
 
     @Override
     public boolean shouldContinue() {
+        if (this.deathAngel.hasNoisyTargetMemory()) {
+            return false;
+        }
+
         if (this.targetPosition == null) {
             return false;
         }
@@ -66,18 +77,18 @@ public class InvestigateNoiseGoal extends Goal {
 
         double distanceSquared = this.deathAngel.getPos().squaredDistanceTo(this.targetPosition);
 
-        // Stop once close enough to the noise source.
-        return distanceSquared > 2.25;
+        return distanceSquared > 2.25 || this.isHeavyInvestigation();
     }
 
     @Override
     public void start() {
-        this.investigateTicks = 20 * 8;
-        this.repathCooldownTicks = 0;
-        this.listenDelayTicks = 20;
+        this.resetInvestigationTimers();
 
-        // Mark this noise as handled immediately so this same goal does not restart on it later.
         this.lastHandledNoiseGameTime = this.targetNoiseGameTime;
+
+        if (this.shouldTriggerHunt()) {
+            this.deathAngel.rememberNoisyTarget(this.targetSourceUuid, this.getHuntMemoryTicks());
+        }
 
         this.deathAngel.getNavigation().stop();
         this.deathAngel.playHearReaction(this.targetPosition);
@@ -87,9 +98,15 @@ public class InvestigateNoiseGoal extends Goal {
     public void stop() {
         this.targetPosition = null;
         this.targetNoiseGameTime = -1L;
+        this.targetSourceUuid = null;
+        this.targetStrength = 0.0f;
+        this.targetRadius = 0.0f;
+
         this.investigateTicks = 0;
         this.repathCooldownTicks = 0;
         this.listenDelayTicks = 0;
+        this.newNoiseCheckCooldownTicks = 0;
+
         this.deathAngel.getNavigation().stop();
     }
 
@@ -100,6 +117,12 @@ public class InvestigateNoiseGoal extends Goal {
         }
 
         this.investigateTicks--;
+
+        this.checkForNewerNoise();
+
+        if (this.deathAngel.hasNoisyTargetMemory()) {
+            return;
+        }
 
         this.deathAngel.getLookControl().lookAt(
                 this.targetPosition.x,
@@ -126,6 +149,59 @@ public class InvestigateNoiseGoal extends Goal {
         return true;
     }
 
+    private void checkForNewerNoise() {
+        if (this.deathAngel.getWorld().isClient()) {
+            return;
+        }
+
+        if (!(this.deathAngel.getWorld() instanceof ServerWorld serverWorld)) {
+            return;
+        }
+
+        this.newNoiseCheckCooldownTicks--;
+
+        if (this.newNoiseCheckCooldownTicks > 0) {
+            return;
+        }
+
+        this.newNoiseCheckCooldownTicks = 4;
+
+        NoiseEvent newerNoise = this.findBestNoise(serverWorld);
+
+        if (newerNoise == null) {
+            return;
+        }
+
+        this.setTargetNoise(newerNoise);
+        this.lastHandledNoiseGameTime = newerNoise.gameTime();
+
+        if (this.shouldTriggerHunt()) {
+            this.deathAngel.rememberNoisyTarget(this.targetSourceUuid, this.getHuntMemoryTicks());
+            return;
+        }
+
+        this.resetInvestigationTimers();
+
+        if (this.listenDelayTicks > 5) {
+            this.listenDelayTicks = 5;
+        }
+    }
+
+    private void setTargetNoise(NoiseEvent noiseEvent) {
+        this.targetPosition = noiseEvent.position();
+        this.targetNoiseGameTime = noiseEvent.gameTime();
+        this.targetSourceUuid = noiseEvent.sourceEntityUuid();
+        this.targetStrength = noiseEvent.strength();
+        this.targetRadius = noiseEvent.radius();
+    }
+
+    private void resetInvestigationTimers() {
+        this.investigateTicks = this.isHeavyInvestigation() ? 20 * 12 : 20 * 8;
+        this.repathCooldownTicks = 0;
+        this.listenDelayTicks = this.isHeavyInvestigation() ? 30 : 20;
+        this.newNoiseCheckCooldownTicks = 0;
+    }
+
     private void moveToTarget() {
         if (this.targetPosition == null) {
             return;
@@ -135,8 +211,44 @@ public class InvestigateNoiseGoal extends Goal {
                 this.targetPosition.x,
                 this.targetPosition.y,
                 this.targetPosition.z,
-                this.movementSpeed
+                this.getInvestigationSpeed()
         );
+    }
+
+    private boolean shouldTriggerHunt() {
+        if (this.targetSourceUuid == null) {
+            return false;
+        }
+
+        return this.targetStrength >= 0.8f || this.targetRadius >= 12.0f;
+    }
+
+    private boolean isHeavyInvestigation() {
+        /*
+         * Loud source-based sounds, like a slammed door, become heavy investigations.
+         * They do not directly chase the player because targetSourceUuid is null.
+         */
+        return this.targetSourceUuid == null && (this.targetStrength >= 0.65f || this.targetRadius >= 10.0f);
+    }
+
+    private double getInvestigationSpeed() {
+        if (this.isHeavyInvestigation()) {
+            return this.movementSpeed * 1.15;
+        }
+
+        return this.movementSpeed;
+    }
+
+    private int getHuntMemoryTicks() {
+        if (this.targetRadius >= 24.0f) {
+            return 20 * 6;
+        }
+
+        if (this.targetRadius >= 18.0f) {
+            return 20 * 4;
+        }
+
+        return 20 * 3;
     }
 
     private NoiseEvent findBestNoise(ServerWorld serverWorld) {
@@ -149,7 +261,6 @@ public class InvestigateNoiseGoal extends Goal {
         double bestScore = Double.NEGATIVE_INFINITY;
 
         for (NoiseEvent noiseEvent : hearableNoises) {
-            // Do not react to the same already-handled noise again.
             if (noiseEvent.gameTime() <= this.lastHandledNoiseGameTime) {
                 continue;
             }
