@@ -15,9 +15,15 @@ import net.minecraft.world.World;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animation.AnimatableManager;
+import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animation.PlayState;
+import software.bernie.geckolib.animation.RawAnimation;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 public class DeathAngelEntity extends HostileEntity implements GeoEntity {
+    private static final RawAnimation IDLE_ANIMATION = RawAnimation.begin().thenLoop("IDLE");
+    private static final RawAnimation WALK_ANIMATION = RawAnimation.begin().thenLoop("WALK");
+
     private final AnimatableInstanceCache geoCache = GeckoLibUtil.createInstanceCache(this);
 
     public DeathAngelEntity(EntityType<? extends DeathAngelEntity> entityType, World world) {
@@ -38,7 +44,7 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity {
     protected void initGoals() {
         this.goalSelector.add(0, new SwimGoal(this));
 
-        // Temporary basic movement so we can confirm pathfinding works.
+        // Temporary basic movement so we can confirm pathfinding and animations work.
         this.goalSelector.add(5, new WanderAroundFarGoal(this, 0.85));
 
         // Temporary visual behavior. Later, the Death Angel will mostly react to sound instead of sight.
@@ -67,7 +73,13 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity {
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        // Animation controllers will be added after we confirm basic movement works.
+        controllers.add(new AnimationController<>(this, "movement_controller", 5, state -> {
+            if (state.isMoving()) {
+                return state.setAndContinue(WALK_ANIMATION);
+            }
+
+            return state.setAndContinue(IDLE_ANIMATION);
+        }));
     }
 
     @Override
