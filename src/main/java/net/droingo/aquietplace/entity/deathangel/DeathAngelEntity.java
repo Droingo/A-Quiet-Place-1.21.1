@@ -248,6 +248,7 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity {
         if (this.climbTargetPosition == null) {
             return null;
         }
+        //comment
 
         Vec3d directionToTarget = this.climbTargetPosition.subtract(this.getPos());
         double horizontalLength = Math.sqrt(
