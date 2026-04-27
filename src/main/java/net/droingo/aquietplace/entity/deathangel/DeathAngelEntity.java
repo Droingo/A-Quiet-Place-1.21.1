@@ -1,9 +1,14 @@
 package net.droingo.aquietplace.entity.deathangel;
 
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.ai.goal.LookAroundGoal;
+import net.minecraft.entity.ai.goal.LookAtEntityGoal;
+import net.minecraft.entity.ai.goal.SwimGoal;
+import net.minecraft.entity.ai.goal.WanderAroundFarGoal;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.mob.HostileEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.World;
@@ -31,7 +36,14 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity {
 
     @Override
     protected void initGoals() {
-        // Goals will be added after the model is rendering correctly.
+        this.goalSelector.add(0, new SwimGoal(this));
+
+        // Temporary basic movement so we can confirm pathfinding works.
+        this.goalSelector.add(5, new WanderAroundFarGoal(this, 0.85));
+
+        // Temporary visual behavior. Later, the Death Angel will mostly react to sound instead of sight.
+        this.goalSelector.add(6, new LookAtEntityGoal(this, PlayerEntity.class, 16.0f));
+        this.goalSelector.add(7, new LookAroundGoal(this));
     }
 
     @Override
@@ -55,7 +67,7 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity {
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        // Animation controllers will be added after we confirm the model renders.
+        // Animation controllers will be added after we confirm basic movement works.
     }
 
     @Override
