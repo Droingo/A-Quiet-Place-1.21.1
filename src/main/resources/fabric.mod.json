@@ -1,0 +1,37 @@
+{
+	"schemaVersion": 1,
+	"id": "aquietplace",
+	"version": "${version}",
+	"name": "A Quiet Place",
+	"description": "Droingo's mod for the Quiet Place event!",
+	"authors": [
+		"Droingo"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "MIT",
+	"icon": "assets/aquietplace/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"net.droingo.aquietplace.AQuietPlace"
+		],
+		"fabric-datagen": [
+			"net.droingo.aquietplace.AQuietPlaceDataGenerator"
+		],
+      "client": [
+        "net.droingo.aquietplace.AQuietPlaceClient"
+      ]
+	},
+	"mixins": [
+		"aquietplace.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.19.2",
+		"minecraft": "~1.21.1",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
