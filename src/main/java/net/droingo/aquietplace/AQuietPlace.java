@@ -1,7 +1,9 @@
 package net.droingo.aquietplace;
 
 import net.droingo.aquietplace.command.AQuietPlaceCommands;
+import net.droingo.aquietplace.network.ModNetworking;
 import net.droingo.aquietplace.noise.NoiseSystem;
+import net.droingo.aquietplace.noise.PlayerNoiseHandler;
 import net.droingo.aquietplace.registry.ModEntities;
 import net.droingo.aquietplace.registry.ModItems;
 import net.fabricmc.api.ModInitializer;
@@ -16,10 +18,13 @@ public class AQuietPlace implements ModInitializer {
     public void onInitialize() {
         LOGGER.info("Initializing A Quiet Place");
 
+        ModNetworking.registerPayloads();
+
         ModEntities.register();
         ModItems.register();
 
         NoiseSystem.initialize();
+        PlayerNoiseHandler.register();
         AQuietPlaceCommands.register();
     }
 }
