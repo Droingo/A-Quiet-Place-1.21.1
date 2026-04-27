@@ -72,8 +72,12 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity {
     private int runAttackAnimationTicks;
     private int attackCooldownTicks;
 
+    private int suppressHearReactionTicks;
     private UUID noisyTargetUuid;
     private int noisyTargetMemoryTicks;
+
+    private UUID recentHuntTargetUuid;
+    private int recentHuntTargetTicks;
 
     public DeathAngelEntity(EntityType<? extends DeathAngelEntity> entityType, World world) {
         super(entityType, world);
@@ -130,6 +134,8 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity {
             tickRunAttackAnimation();
             tickAttackCooldown();
             tickNoisyTargetMemory();
+            tickSuppressHearReaction();
+            tickRecentHuntTarget();
         }
 
         if (!this.getWorld().isClient() && this.age % 10 == 0 && this.getWorld() instanceof ServerWorld serverWorld) {
@@ -189,6 +195,33 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity {
         }
     }
 
+    private void tickRecentHuntTarget() {
+        if (this.recentHuntTargetTicks <= 0) {
+            this.recentHuntTargetUuid = null;
+            return;
+        }
+
+        this.recentHuntTargetTicks--;
+
+        if (this.recentHuntTargetTicks <= 0) {
+            this.recentHuntTargetUuid = null;
+        }
+    }
+
+    private void tickSuppressHearReaction() {
+        if (this.suppressHearReactionTicks > 0) {
+            this.suppressHearReactionTicks--;
+        }
+    }
+
+    public void suppressHearReaction(int ticks) {
+        this.suppressHearReactionTicks = Math.max(this.suppressHearReactionTicks, ticks);
+    }
+
+    public boolean shouldSuppressHearReaction() {
+        return this.suppressHearReactionTicks > 0;
+    }
+
     private void tickNoisyTargetMemory() {
         if (this.noisyTargetMemoryTicks <= 0) {
             this.noisyTargetUuid = null;
@@ -211,7 +244,16 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity {
         double cross = lookDirection.x * directionToNoise.z - lookDirection.z * directionToNoise.x;
         boolean noiseIsLeft = cross > 0.0;
 
-        this.hearReactionTicks = 40;
+        /*
+         * Our animation selection is intentionally swapped:
+         * noiseIsLeft=true currently plays HearRight,
+         * noiseIsLeft=false currently plays HearLeft.
+         *
+         * HearRight is about 3 seconds.
+         * HearLeft is about 4 seconds.
+         */
+        this.hearReactionTicks = noiseIsLeft ? 20 * 3 : 20 * 4;
+
         this.dataTracker.set(HEAR_REACTION_LEFT, noiseIsLeft);
         this.dataTracker.set(HEAR_REACTION_ACTIVE, true);
     }
@@ -254,6 +296,25 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity {
         this.noisyTargetUuid = targetUuid;
         this.noisyTargetMemoryTicks = Math.max(this.noisyTargetMemoryTicks, memoryTicks);
         this.dataTracker.set(CHASING_NOISY_TARGET, true);
+
+        this.recentHuntTargetUuid = targetUuid;
+        this.recentHuntTargetTicks = Math.max(this.recentHuntTargetTicks, 20 * 10);
+    }
+
+    public boolean shouldPlayHearReactionForHunt(UUID targetUuid) {
+        if (targetUuid == null) {
+            return true;
+        }
+
+        if (this.shouldSuppressHearReaction()) {
+            return false;
+        }
+
+        if (targetUuid.equals(this.recentHuntTargetUuid) && this.recentHuntTargetTicks > 0) {
+            return false;
+        }
+
+        return true;
     }
 
     public boolean hasNoisyTargetMemory() {
@@ -270,6 +331,10 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity {
         }
 
         return serverWorld.getEntity(this.noisyTargetUuid);
+    }
+
+    public int getHearReactionTicksRemaining() {
+        return this.hearReactionTicks;
     }
 
     public boolean isPlayingHearReaction() {

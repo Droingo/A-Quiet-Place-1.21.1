@@ -59,7 +59,7 @@ public class InvestigateNoiseGoal extends Goal {
 
     @Override
     public boolean shouldContinue() {
-        if (this.deathAngel.hasNoisyTargetMemory()) {
+        if (this.deathAngel.hasNoisyTargetMemory() && !this.deathAngel.isPlayingHearReaction()) {
             return false;
         }
 
@@ -71,7 +71,7 @@ public class InvestigateNoiseGoal extends Goal {
             return false;
         }
 
-        if (this.listenDelayTicks > 0) {
+        if (this.listenDelayTicks > 0 || this.deathAngel.isPlayingHearReaction()) {
             return true;
         }
 
@@ -86,12 +86,21 @@ public class InvestigateNoiseGoal extends Goal {
 
         this.lastHandledNoiseGameTime = this.targetNoiseGameTime;
 
-        if (this.shouldTriggerHunt()) {
+        boolean triggersHunt = this.shouldTriggerHunt();
+        boolean shouldPlayHear = !triggersHunt || this.deathAngel.shouldPlayHearReactionForHunt(this.targetSourceUuid);
+
+        if (triggersHunt) {
             this.deathAngel.rememberNoisyTarget(this.targetSourceUuid, this.getHuntMemoryTicks());
         }
 
         this.deathAngel.getNavigation().stop();
-        this.deathAngel.playHearReaction(this.targetPosition);
+
+        if (shouldPlayHear) {
+            this.deathAngel.playHearReaction(this.targetPosition);
+            this.listenDelayTicks = Math.max(this.listenDelayTicks, this.deathAngel.getHearReactionTicksRemaining());
+        } else {
+            this.listenDelayTicks = 0;
+        }
     }
 
     @Override
@@ -120,10 +129,6 @@ public class InvestigateNoiseGoal extends Goal {
 
         this.checkForNewerNoise();
 
-        if (this.deathAngel.hasNoisyTargetMemory()) {
-            return;
-        }
-
         this.deathAngel.getLookControl().lookAt(
                 this.targetPosition.x,
                 this.targetPosition.y,
@@ -133,6 +138,15 @@ public class InvestigateNoiseGoal extends Goal {
         if (this.listenDelayTicks > 0) {
             this.listenDelayTicks--;
             this.deathAngel.getNavigation().stop();
+            return;
+        }
+
+        if (this.deathAngel.isPlayingHearReaction()) {
+            this.deathAngel.getNavigation().stop();
+            return;
+        }
+
+        if (this.deathAngel.hasNoisyTargetMemory()) {
             return;
         }
 
@@ -175,15 +189,42 @@ public class InvestigateNoiseGoal extends Goal {
         this.setTargetNoise(newerNoise);
         this.lastHandledNoiseGameTime = newerNoise.gameTime();
 
+        /*
+         * Important:
+         * If a newer player-made loud sound is heard while listening,
+         * refresh hunt memory but do NOT restart HearLeft/HearRight.
+         *
+         * This prevents the Death Angel from getting stuck in endless listening
+         * while the player keeps sprinting/jumping.
+         */
         if (this.shouldTriggerHunt()) {
+            boolean shouldPlayHear = this.deathAngel.shouldPlayHearReactionForHunt(this.targetSourceUuid);
+
             this.deathAngel.rememberNoisyTarget(this.targetSourceUuid, this.getHuntMemoryTicks());
+            this.investigateTicks = Math.max(this.investigateTicks, 20 * 4);
+
+            if (shouldPlayHear && !this.deathAngel.isPlayingHearReaction()) {
+                this.deathAngel.getNavigation().stop();
+                this.deathAngel.playHearReaction(this.targetPosition);
+                this.listenDelayTicks = Math.max(this.listenDelayTicks, this.deathAngel.getHearReactionTicksRemaining());
+            } else {
+                this.listenDelayTicks = 0;
+            }
+
             return;
         }
-
+        /*
+         * For newer source-based sounds, update the investigation target.
+         * Only play a fresh hear reaction if it is not already listening.
+         */
         this.resetInvestigationTimers();
 
-        if (this.listenDelayTicks > 5) {
-            this.listenDelayTicks = 5;
+        if (!this.deathAngel.isPlayingHearReaction()) {
+            this.deathAngel.getNavigation().stop();
+            this.deathAngel.playHearReaction(this.targetPosition);
+            this.listenDelayTicks = Math.max(this.listenDelayTicks, this.deathAngel.getHearReactionTicksRemaining());
+        } else {
+            this.listenDelayTicks = Math.max(this.listenDelayTicks, this.deathAngel.getHearReactionTicksRemaining());
         }
     }
 
@@ -224,10 +265,6 @@ public class InvestigateNoiseGoal extends Goal {
     }
 
     private boolean isHeavyInvestigation() {
-        /*
-         * Loud source-based sounds, like a slammed door, become heavy investigations.
-         * They do not directly chase the player because targetSourceUuid is null.
-         */
         return this.targetSourceUuid == null && (this.targetStrength >= 0.65f || this.targetRadius >= 10.0f);
     }
 

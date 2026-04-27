@@ -22,7 +22,12 @@ public class ChaseNoisyTargetGoal extends Goal {
 
     @Override
     public boolean canStart() {
+        if (this.deathAngel.isPlayingHearReaction()) {
+            return false;
+        }
         Entity rememberedTarget = this.deathAngel.getNoisyTargetEntity();
+
+
 
         if (!isValidTarget(rememberedTarget)) {
             return false;
@@ -34,6 +39,10 @@ public class ChaseNoisyTargetGoal extends Goal {
 
     @Override
     public boolean shouldContinue() {
+        if (this.deathAngel.isPlayingHearReaction()) {
+            return false;
+        }
+
         return this.deathAngel.hasNoisyTargetMemory() && isValidTarget(this.targetEntity);
     }
 

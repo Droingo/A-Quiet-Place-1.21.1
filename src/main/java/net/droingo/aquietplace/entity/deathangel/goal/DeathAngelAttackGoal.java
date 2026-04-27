@@ -13,7 +13,9 @@ public class DeathAngelAttackGoal extends Goal {
     private static final int ATTACK_WINDUP_TICKS = 7;
     private static final int RUN_ATTACK_ANIMATION_TICKS = 18;
     private static final int ATTACK_COOLDOWN_TICKS = 18;
+    private static final int POST_ATTACK_MEMORY_TICKS = 20 * 5;
     private static final double RUN_ATTACK_SPEED = 1.45;
+    private static final int POST_ATTACK_SUPPRESS_HEAR_TICKS = 20 * 5;
 
     private final DeathAngelEntity deathAngel;
 
@@ -29,6 +31,10 @@ public class DeathAngelAttackGoal extends Goal {
 
     @Override
     public boolean canStart() {
+        if (this.deathAngel.isPlayingHearReaction()) {
+            return false;
+        }
+
         if (!this.deathAngel.hasNoisyTargetMemory()) {
             return false;
         }
@@ -74,11 +80,15 @@ public class DeathAngelAttackGoal extends Goal {
         this.repathCooldownTicks = 0;
         this.hasDealtDamage = false;
 
+        refreshTargetMemory();
+
         this.deathAngel.startRunAttackAnimation(RUN_ATTACK_ANIMATION_TICKS);
     }
 
     @Override
     public void stop() {
+        refreshTargetMemory();
+
         this.targetEntity = null;
         this.windupTicks = 0;
         this.repathCooldownTicks = 0;
@@ -91,6 +101,8 @@ public class DeathAngelAttackGoal extends Goal {
         if (this.targetEntity == null) {
             return;
         }
+
+        refreshTargetMemory();
 
         this.deathAngel.getLookControl().lookAt(this.targetEntity, 40.0f, 40.0f);
 
@@ -112,12 +124,22 @@ public class DeathAngelAttackGoal extends Goal {
             }
 
             this.hasDealtDamage = true;
+            refreshTargetMemory();
         }
     }
 
     @Override
     public boolean shouldRunEveryTick() {
         return true;
+    }
+
+    private void refreshTargetMemory() {
+        if (this.targetEntity == null) {
+            return;
+        }
+
+        this.deathAngel.rememberNoisyTarget(this.targetEntity.getUuid(), POST_ATTACK_MEMORY_TICKS);
+        this.deathAngel.suppressHearReaction(POST_ATTACK_SUPPRESS_HEAR_TICKS);
     }
 
     private boolean isValidTarget(Entity entity) {
