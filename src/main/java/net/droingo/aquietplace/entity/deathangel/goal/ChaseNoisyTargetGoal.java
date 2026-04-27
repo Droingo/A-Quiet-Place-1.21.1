@@ -55,6 +55,7 @@ public class ChaseNoisyTargetGoal extends Goal {
     public void stop() {
         this.targetEntity = null;
         this.repathCooldownTicks = 0;
+        this.deathAngel.clearClimbTargetPosition();
         this.deathAngel.getNavigation().stop();
     }
 
@@ -63,7 +64,7 @@ public class ChaseNoisyTargetGoal extends Goal {
         if (this.targetEntity == null) {
             return;
         }
-
+        this.deathAngel.setClimbTargetPosition(this.targetEntity.getPos());
         this.deathAngel.getLookControl().lookAt(this.targetEntity, 30.0f, 30.0f);
 
         this.repathCooldownTicks--;
