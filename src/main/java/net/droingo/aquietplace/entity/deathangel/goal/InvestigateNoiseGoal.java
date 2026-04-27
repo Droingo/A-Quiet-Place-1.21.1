@@ -15,8 +15,13 @@ public class InvestigateNoiseGoal extends Goal {
     private final double movementSpeed;
 
     private Vec3d targetPosition;
+    private long targetNoiseGameTime = -1L;
+
+    private long lastHandledNoiseGameTime = -1L;
+
     private int investigateTicks;
     private int repathCooldownTicks;
+    private int listenDelayTicks;
 
     public InvestigateNoiseGoal(DeathAngelEntity deathAngel, double movementSpeed) {
         this.deathAngel = deathAngel;
@@ -40,6 +45,8 @@ public class InvestigateNoiseGoal extends Goal {
         }
 
         this.targetPosition = bestNoise.position();
+        this.targetNoiseGameTime = bestNoise.gameTime();
+
         return true;
     }
 
@@ -53,6 +60,10 @@ public class InvestigateNoiseGoal extends Goal {
             return false;
         }
 
+        if (this.listenDelayTicks > 0) {
+            return true;
+        }
+
         double distanceSquared = this.deathAngel.getPos().squaredDistanceTo(this.targetPosition);
 
         // Stop once close enough to the noise source.
@@ -63,14 +74,22 @@ public class InvestigateNoiseGoal extends Goal {
     public void start() {
         this.investigateTicks = 20 * 8;
         this.repathCooldownTicks = 0;
-        this.moveToTarget();
+        this.listenDelayTicks = 20;
+
+        // Mark this noise as handled immediately so this same goal does not restart on it later.
+        this.lastHandledNoiseGameTime = this.targetNoiseGameTime;
+
+        this.deathAngel.getNavigation().stop();
+        this.deathAngel.playHearReaction(this.targetPosition);
     }
 
     @Override
     public void stop() {
         this.targetPosition = null;
+        this.targetNoiseGameTime = -1L;
         this.investigateTicks = 0;
         this.repathCooldownTicks = 0;
+        this.listenDelayTicks = 0;
         this.deathAngel.getNavigation().stop();
     }
 
@@ -81,13 +100,20 @@ public class InvestigateNoiseGoal extends Goal {
         }
 
         this.investigateTicks--;
-        this.repathCooldownTicks--;
 
         this.deathAngel.getLookControl().lookAt(
                 this.targetPosition.x,
                 this.targetPosition.y,
                 this.targetPosition.z
         );
+
+        if (this.listenDelayTicks > 0) {
+            this.listenDelayTicks--;
+            this.deathAngel.getNavigation().stop();
+            return;
+        }
+
+        this.repathCooldownTicks--;
 
         if (this.repathCooldownTicks <= 0) {
             this.moveToTarget();
@@ -123,6 +149,11 @@ public class InvestigateNoiseGoal extends Goal {
         double bestScore = Double.NEGATIVE_INFINITY;
 
         for (NoiseEvent noiseEvent : hearableNoises) {
+            // Do not react to the same already-handled noise again.
+            if (noiseEvent.gameTime() <= this.lastHandledNoiseGameTime) {
+                continue;
+            }
+
             double distance = Math.sqrt(noiseEvent.position().squaredDistanceTo(this.deathAngel.getPos()));
 
             double score =

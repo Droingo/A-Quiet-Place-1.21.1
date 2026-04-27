@@ -8,24 +8,41 @@ import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.WanderAroundFarGoal;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animation.AnimatableManager;
 import software.bernie.geckolib.animation.AnimationController;
-import software.bernie.geckolib.animation.PlayState;
 import software.bernie.geckolib.animation.RawAnimation;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 public class DeathAngelEntity extends HostileEntity implements GeoEntity {
+    private static final TrackedData<Boolean> HEAR_REACTION_ACTIVE = DataTracker.registerData(
+            DeathAngelEntity.class,
+            TrackedDataHandlerRegistry.BOOLEAN
+    );
+
+    private static final TrackedData<Boolean> HEAR_REACTION_LEFT = DataTracker.registerData(
+            DeathAngelEntity.class,
+            TrackedDataHandlerRegistry.BOOLEAN
+    );
+
     private static final RawAnimation IDLE_ANIMATION = RawAnimation.begin().thenLoop("IDLE");
     private static final RawAnimation WALK_ANIMATION = RawAnimation.begin().thenLoop("WALK");
+    private static final RawAnimation HEAR_LEFT_ANIMATION = RawAnimation.begin().thenPlay("HearLeft");
+    private static final RawAnimation HEAR_RIGHT_ANIMATION = RawAnimation.begin().thenPlay("HearRight");
 
     private final AnimatableInstanceCache geoCache = GeckoLibUtil.createInstanceCache(this);
+
+    private int hearReactionTicks;
 
     public DeathAngelEntity(EntityType<? extends DeathAngelEntity> entityType, World world) {
         super(entityType, world);
@@ -39,6 +56,13 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity {
                 .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 12.0)
                 .add(EntityAttributes.GENERIC_FOLLOW_RANGE, 48.0)
                 .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, 0.8);
+    }
+
+    @Override
+    protected void initDataTracker(DataTracker.Builder builder) {
+        super.initDataTracker(builder);
+        builder.add(HEAR_REACTION_ACTIVE, false);
+        builder.add(HEAR_REACTION_LEFT, false);
     }
 
     @Override
@@ -60,6 +84,14 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity {
     public void tick() {
         super.tick();
 
+        if (!this.getWorld().isClient() && this.hearReactionTicks > 0) {
+            this.hearReactionTicks--;
+
+            if (this.hearReactionTicks <= 0) {
+                this.dataTracker.set(HEAR_REACTION_ACTIVE, false);
+            }
+        }
+
         if (!this.getWorld().isClient() && this.age % 10 == 0 && this.getWorld() instanceof ServerWorld serverWorld) {
             serverWorld.spawnParticles(
                     ParticleTypes.SCULK_SOUL,
@@ -75,9 +107,37 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity {
         }
     }
 
+    public void playHearReaction(Vec3d noisePosition) {
+        Vec3d lookDirection = this.getRotationVec(1.0f).normalize();
+        Vec3d directionToNoise = noisePosition.subtract(this.getPos()).normalize();
+
+        double cross = lookDirection.x * directionToNoise.z - lookDirection.z * directionToNoise.x;
+        boolean noiseIsLeft = cross > 0.0;
+
+        this.hearReactionTicks = 40;
+        this.dataTracker.set(HEAR_REACTION_LEFT, noiseIsLeft);
+        this.dataTracker.set(HEAR_REACTION_ACTIVE, true);
+    }
+
+    public boolean isPlayingHearReaction() {
+        return this.dataTracker.get(HEAR_REACTION_ACTIVE);
+    }
+
+    public boolean isHearReactionLeft() {
+        return this.dataTracker.get(HEAR_REACTION_LEFT);
+    }
+
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new AnimationController<>(this, "movement_controller", 5, state -> {
+            if (this.isPlayingHearReaction()) {
+                if (this.isHearReactionLeft()) {
+                    return state.setAndContinue(HEAR_RIGHT_ANIMATION);
+                }
+
+                return state.setAndContinue(HEAR_LEFT_ANIMATION);
+            }
+
             if (state.isMoving()) {
                 return state.setAndContinue(WALK_ANIMATION);
             }
