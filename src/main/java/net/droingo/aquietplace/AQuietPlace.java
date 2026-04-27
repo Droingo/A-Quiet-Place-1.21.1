@@ -10,6 +10,9 @@ import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.droingo.aquietplace.noise.InteractionNoiseHandler;
+import net.droingo.aquietplace.noise.BlockNoiseHandler;
+import net.droingo.aquietplace.noise.ActionNoiseHandler;
+
 
 public class AQuietPlace implements ModInitializer {
     public static final String MOD_ID = "aquietplace";
@@ -27,6 +30,8 @@ public class AQuietPlace implements ModInitializer {
         NoiseSystem.initialize();
         PlayerNoiseHandler.register();
         AQuietPlaceCommands.register();
+        BlockNoiseHandler.register();
         InteractionNoiseHandler.register();
+        ActionNoiseHandler.register();
     }
 }
