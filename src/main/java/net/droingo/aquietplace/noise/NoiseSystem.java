@@ -1,6 +1,7 @@
 package net.droingo.aquietplace.noise;
 
 import net.droingo.aquietplace.AQuietPlace;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.Vec3d;
 
@@ -12,7 +13,9 @@ public final class NoiseSystem {
     private static final List<NoiseEvent> RECENT_NOISES = new ArrayList<>();
 
     private static final long MAX_NOISE_AGE_TICKS = 20L * 10L;
+
     private static boolean debugLoggingEnabled = true;
+    private static boolean debugParticlesEnabled = true;
 
     private NoiseSystem() {
     }
@@ -33,6 +36,10 @@ public final class NoiseSystem {
                     noiseEvent.position(),
                     noiseEvent.getSourceEntityUuid().map(Object::toString).orElse("none")
             );
+        }
+
+        if (debugParticlesEnabled) {
+            spawnDebugParticles(noiseEvent);
         }
     }
 
@@ -90,11 +97,83 @@ public final class NoiseSystem {
         }
     }
 
+    private static void spawnDebugParticles(NoiseEvent noiseEvent) {
+        Vec3d position = noiseEvent.position();
+        ServerWorld world = noiseEvent.world();
+
+        double x = position.x;
+        double y = position.y + 0.15;
+        double z = position.z;
+
+        int centerCount = Math.max(8, Math.min(40, Math.round(noiseEvent.radius())));
+        double ringRadius = Math.min(noiseEvent.radius(), 32.0f);
+
+        world.spawnParticles(
+                ParticleTypes.SONIC_BOOM,
+                x,
+                y + 0.5,
+                z,
+                1,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+        );
+
+        world.spawnParticles(
+                ParticleTypes.NOTE,
+                x,
+                y + 1.0,
+                z,
+                centerCount,
+                0.5,
+                0.5,
+                0.5,
+                0.05
+        );
+
+        spawnNoiseRadiusRing(world, x, y, z, ringRadius);
+    }
+
+    private static void spawnNoiseRadiusRing(ServerWorld world, double centerX, double centerY, double centerZ, double radius) {
+        if (radius <= 0.0) {
+            return;
+        }
+
+        int points = Math.max(24, Math.min(96, (int) Math.round(radius * 4.0)));
+
+        for (int i = 0; i < points; i++) {
+            double angle = (Math.PI * 2.0 * i) / points;
+            double x = centerX + Math.cos(angle) * radius;
+            double z = centerZ + Math.sin(angle) * radius;
+
+            world.spawnParticles(
+                    ParticleTypes.SCULK_SOUL,
+                    x,
+                    centerY + 0.05,
+                    z,
+                    1,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0
+            );
+        }
+    }
+
     public static void setDebugLoggingEnabled(boolean enabled) {
         debugLoggingEnabled = enabled;
     }
 
     public static boolean isDebugLoggingEnabled() {
         return debugLoggingEnabled;
+    }
+
+    public static void setDebugParticlesEnabled(boolean enabled) {
+        debugParticlesEnabled = enabled;
+    }
+
+    public static boolean isDebugParticlesEnabled() {
+        return debugParticlesEnabled;
     }
 }
