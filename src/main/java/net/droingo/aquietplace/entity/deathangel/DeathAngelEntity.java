@@ -49,10 +49,7 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
             TrackedDataHandlerRegistry.BOOLEAN
     );
 
-    private static final TrackedData<Boolean> CLIMBING = DataTracker.registerData(
-            DeathAngelEntity.class,
-            TrackedDataHandlerRegistry.BOOLEAN
-    );
+
 
     private static final TrackedData<Boolean> ATTACK_ANIMATION_ACTIVE = DataTracker.registerData(
             DeathAngelEntity.class,
@@ -87,15 +84,6 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
     private int runAttackAnimationTicks;
     private int attackCooldownTicks;
 
-    private static final double CLIMB_UP_SPEED = 0.22;
-    private static final double CLIMB_FORWARD_SPEED = 0.08;
-    private static final double LEDGE_FORWARD_SPEED = 0.24;
-    private static final double LEDGE_UP_SPEED = 0.12;
-    private static final int CLIMB_MEMORY_TICKS = 8;
-
-    private int climbTicks;
-    private Vec3d climbTargetPosition;
-
     private int suppressHearReactionTicks;
     private UUID noisyTargetUuid;
     private int noisyTargetMemoryTicks;
@@ -127,8 +115,7 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
         builder.add(ATTACK_ANIMATION_ACTIVE, false);
         builder.add(RUN_ATTACK_ANIMATION_ACTIVE, false);
         builder.add(CHASING_NOISY_TARGET, false);
-        builder.add(CLIMBING, false);
-    }
+           }
 
     @Override
     protected void initGoals() {
@@ -165,7 +152,7 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
             tickNoisyTargetMemory();
             tickSuppressHearReaction();
             tickRecentHuntTarget();
-          //  tickWallClimbing();
+
         }
 
         if (!this.getWorld().isClient() && this.age % 10 == 0 && this.getWorld() instanceof ServerWorld serverWorld) {
@@ -195,150 +182,7 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
         }
     }
 
-    private void tickWallClimbing() {
-        boolean shouldClimb = shouldClimbWall();
 
-        if (shouldClimb) {
-            this.climbTicks = CLIMB_MEMORY_TICKS;
-        } else if (this.climbTicks > 0) {
-            this.climbTicks--;
-        }
-
-        boolean climbing = this.climbTicks > 0;
-        this.dataTracker.set(CLIMBING, climbing);
-
-        if (!climbing) {
-            return;
-        }
-
-        this.fallDistance = 0.0f;
-
-        if (this.isTouchingWater()) {
-            return;
-        }
-
-        Vec3d climbDirection = getHorizontalDirectionToClimbTarget();
-
-        double pushX = this.getVelocity().x * 0.5;
-        double pushZ = this.getVelocity().z * 0.5;
-        double pushY = CLIMB_UP_SPEED;
-
-        if (climbDirection != null) {
-            pushX = climbDirection.x * CLIMB_FORWARD_SPEED;
-            pushZ = climbDirection.z * CLIMB_FORWARD_SPEED;
-        }
-
-        /*
-         * Ledge pull-over:
-         * If the lower body is still near a wall but the upper body has space,
-         * stop trying to climb straight up and push forward over the lip.
-         */
-        if (isAtClimbLedge() && climbDirection != null) {
-            pushX = climbDirection.x * LEDGE_FORWARD_SPEED;
-            pushZ = climbDirection.z * LEDGE_FORWARD_SPEED;
-            pushY = LEDGE_UP_SPEED;
-        }
-
-        this.setVelocity(pushX, pushY, pushZ);
-        this.velocityDirty = true;
-    }
-
-    private boolean shouldClimbWall() {
-        if (this.isTouchingWater()) {
-            return false;
-        }
-
-        if (!this.hasNoisyTargetMemory() && this.getNavigation().isIdle()) {
-            return false;
-        }
-
-        return this.horizontalCollision || hasClimbableBlockNearby();
-    }
-
-    private Vec3d getHorizontalDirectionToClimbTarget() {
-        if (this.climbTargetPosition == null) {
-            return null;
-        }
-        //comment
-
-        Vec3d directionToTarget = this.climbTargetPosition.subtract(this.getPos());
-        double horizontalLength = Math.sqrt(
-                directionToTarget.x * directionToTarget.x
-                        + directionToTarget.z * directionToTarget.z
-        );
-
-        if (horizontalLength <= 0.001) {
-            return null;
-        }
-
-        return new Vec3d(
-                directionToTarget.x / horizontalLength,
-                0.0,
-                directionToTarget.z / horizontalLength
-        );
-    }
-
-    private boolean isAtClimbLedge() {
-        Vec3d climbDirection = getHorizontalDirectionToClimbTarget();
-
-        if (climbDirection == null) {
-            return false;
-        }
-
-        double frontX = this.getX() + climbDirection.x * 0.85;
-        double frontZ = this.getZ() + climbDirection.z * 0.85;
-
-        boolean lowerBlocked = hasSolidCollisionAt(frontX, this.getY() + 0.4, frontZ);
-        boolean middleBlocked = hasSolidCollisionAt(frontX, this.getY() + 1.2, frontZ);
-        boolean upperBlocked = hasSolidCollisionAt(frontX, this.getY() + 2.2, frontZ);
-
-        boolean spaceAboveSelf = !hasSolidCollisionAt(this.getX(), this.getY() + 2.7, this.getZ());
-        boolean spaceAheadUpper = !upperBlocked;
-
-        /*
-         * Lower or middle body is still touching the wall,
-         * but the space near the top/front is open.
-         * That usually means we are at the ledge lip.
-         */
-        return (lowerBlocked || middleBlocked) && spaceAboveSelf && spaceAheadUpper;
-    }
-
-    private boolean hasClimbableBlockNearby() {
-        double checkDistance = 0.75;
-
-        return hasSolidCollisionAt(this.getX() + checkDistance, this.getY() + 0.5, this.getZ())
-                || hasSolidCollisionAt(this.getX() - checkDistance, this.getY() + 0.5, this.getZ())
-                || hasSolidCollisionAt(this.getX(), this.getY() + 0.5, this.getZ() + checkDistance)
-                || hasSolidCollisionAt(this.getX(), this.getY() + 0.5, this.getZ() - checkDistance)
-                || hasSolidCollisionAt(this.getX() + checkDistance, this.getY() + 1.6, this.getZ())
-                || hasSolidCollisionAt(this.getX() - checkDistance, this.getY() + 1.6, this.getZ())
-                || hasSolidCollisionAt(this.getX(), this.getY() + 1.6, this.getZ() + checkDistance)
-                || hasSolidCollisionAt(this.getX(), this.getY() + 1.6, this.getZ() - checkDistance);
-    }
-
-    private boolean hasSolidCollisionAt(double x, double y, double z) {
-        BlockPos blockPos = BlockPos.ofFloored(x, y, z);
-        BlockState blockState = this.getWorld().getBlockState(blockPos);
-
-        return !blockState.getCollisionShape(this.getWorld(), blockPos).isEmpty();
-    }
-
-    public void setClimbTargetPosition(Vec3d climbTargetPosition) {
-        this.climbTargetPosition = climbTargetPosition;
-    }
-
-    public void clearClimbTargetPosition() {
-        this.climbTargetPosition = null;
-    }
-
-    public boolean isDeathAngelClimbing() {
-        return this.dataTracker.get(CLIMBING);
-    }
-
-    @Override
-    public boolean isClimbing() {
-        return super.isClimbing() || this.isDeathAngelClimbing();
-    }
 
     private void tickAttackAnimation() {
         if (this.attackAnimationTicks <= 0) {
@@ -632,7 +476,7 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
                 return state.setAndContinue(HEAR_LEFT_ANIMATION);
             }
 
-            if (state.isMoving() || this.isDeathAngelClimbing()) {
+            if (state.isMoving()) {
                 if (this.isChasingNoisyTargetClientSynced()) {
                     return state.setAndContinue(RUN_ANIMATION);
                 }
