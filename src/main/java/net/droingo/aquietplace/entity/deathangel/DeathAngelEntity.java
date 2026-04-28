@@ -28,10 +28,17 @@ import software.bernie.geckolib.animation.RawAnimation;
 import software.bernie.geckolib.util.GeckoLibUtil;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
+import com.nyfaria.awcapi.entity.ClimberComponent;
+import com.nyfaria.awcapi.entity.IAdvancedClimber;
+import com.nyfaria.awcapi.ClimberHelper;
+import net.minecraft.entity.MovementType;
+import com.nyfaria.awcapi.entity.movement.ClimberPathNavigator;
+import net.minecraft.entity.ai.pathing.EntityNavigation;
+
 
 import java.util.UUID;
 
-public class DeathAngelEntity extends HostileEntity implements GeoEntity {
+public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvancedClimber {
     private static final TrackedData<Boolean> HEAR_REACTION_ACTIVE = DataTracker.registerData(
             DeathAngelEntity.class,
             TrackedDataHandlerRegistry.BOOLEAN
@@ -73,6 +80,7 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity {
     private static final RawAnimation RUN_ATTACK_ANIMATION = RawAnimation.begin().thenPlay("RUNATTACK");
 
     private final AnimatableInstanceCache geoCache = GeckoLibUtil.createInstanceCache(this);
+    private final ClimberComponent climberComponent = new ClimberComponent(this);
 
     private int hearReactionTicks;
     private int attackAnimationTicks;
@@ -97,6 +105,7 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity {
 
     public DeathAngelEntity(EntityType<? extends DeathAngelEntity> entityType, World world) {
         super(entityType, world);
+        ClimberHelper.initClimber(this);
         this.experiencePoints = 25;
     }
 
@@ -145,6 +154,8 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity {
     @Override
     public void tick() {
         super.tick();
+        ClimberHelper.tickClimber(this);
+        ClimberHelper.livingTickClimber(this);
 
         if (!this.getWorld().isClient()) {
             tickHearReaction();
@@ -154,7 +165,7 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity {
             tickNoisyTargetMemory();
             tickSuppressHearReaction();
             tickRecentHuntTarget();
-            tickWallClimbing();
+          //  tickWallClimbing();
         }
 
         if (!this.getWorld().isClient() && this.age % 10 == 0 && this.getWorld() instanceof ServerWorld serverWorld) {
@@ -420,6 +431,99 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity {
 
         this.dataTracker.set(HEAR_REACTION_LEFT, noiseIsLeft);
         this.dataTracker.set(HEAR_REACTION_ACTIVE, true);
+    }
+
+
+    @Override
+    protected EntityNavigation createNavigation(World world) {
+        ClimberPathNavigator<DeathAngelEntity> navigator = new ClimberPathNavigator<>(this, world, false);
+        navigator.setCanSwim(true);
+        return navigator;
+    }
+
+    @Override
+    public float getMovementSpeed() {
+        return (float) this.getAttributeValue(EntityAttributes.GENERIC_MOVEMENT_SPEED);
+    }
+
+    @Override
+    public boolean canClimbOnBlock(BlockState state, BlockPos pos) {
+        return !state.getCollisionShape(this.getWorld(), pos).isEmpty();
+    }
+
+    @Override
+    public ClimberComponent getClimberComponent() {
+        return this.climberComponent;
+    }
+
+    @Override
+    public BlockPos getBlockPos() {
+        return super.getBlockPos();
+    }
+
+    @Override
+    public float getBlockSlipperiness(BlockPos pos) {
+        return this.getWorld().getBlockState(pos).getBlock().getSlipperiness();
+    }
+
+    @Override
+    public HostileEntity asMob() {
+        return this;
+    }
+
+    @Override
+    public void setLerpYRot(Float yRot) {
+        if (yRot != null) {
+            this.setYaw(yRot);
+        }
+    }
+
+    @Override
+    public void setLerpXRot(Float xRot) {
+        if (xRot != null) {
+            this.setPitch(xRot);
+        }
+    }
+
+    @Override
+    public void setLerpYHeadRot(Float yHeadRot) {
+        if (yHeadRot != null) {
+            this.headYaw = yHeadRot;
+        }
+    }
+
+    @Override
+    public void setLerpHeadSteps(int steps) {
+        // Not needed for our first test.
+    }
+
+    @Override
+    public void travel(Vec3d movementInput) {
+        if (ClimberHelper.handleTravel(this, movementInput)) {
+            return;
+        }
+
+        super.travel(movementInput);
+        ClimberHelper.postTravel(this, movementInput);
+    }
+
+    @Override
+    public void move(MovementType movementType, Vec3d movement) {
+        if (ClimberHelper.handleMove(this, movementType, movement, true)) {
+            return;
+        }
+
+        super.move(movementType, movement);
+        ClimberHelper.handleMove(this, movementType, movement, false);
+    }
+
+    @Override
+    public void jump() {
+        if (ClimberHelper.handleJump(this)) {
+            return;
+        }
+
+        super.jump();
     }
 
     public void startAttackAnimation(int ticks) {
