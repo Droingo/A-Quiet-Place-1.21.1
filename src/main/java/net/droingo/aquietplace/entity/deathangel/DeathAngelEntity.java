@@ -521,6 +521,21 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
         super.jump();
     }
 
+    public void clearHuntAndSearchMemory() {
+        this.noisyTargetUuid = null;
+        this.noisyTargetMemoryTicks = 0;
+
+        this.recentHuntTargetUuid = null;
+        this.recentHuntTargetTicks = 0;
+
+        this.lastKnownSearchPosition = null;
+        this.lastKnownSearchTicks = 0;
+
+        this.suppressHearReactionTicks = 0;
+
+        this.getNavigation().stop();
+    }
+
 
     public void startAttackAnimation(int ticks) {
         this.attackAnimationTicks = Math.max(1, ticks);
