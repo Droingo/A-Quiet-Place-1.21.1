@@ -1,6 +1,7 @@
 package net.droingo.aquietplace.noise;
 
 import net.droingo.aquietplace.AQuietPlace;
+import net.droingo.aquietplace.config.QuietPlaceConfig;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.block.BlockState;
@@ -13,9 +14,6 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 
 public final class BlockNoiseHandler {
-    private static final float QUIET_PLACE_RADIUS_MULTIPLIER = 0.35f;
-    private static final float QUIET_PLACE_STRENGTH_MULTIPLIER = 0.50f;
-
     private BlockNoiseHandler() {
     }
 
@@ -85,6 +83,10 @@ public final class BlockNoiseHandler {
         float strength = getBreakStrength(brokenState);
         float radius = getBreakRadius(brokenState);
 
+        if (strength <= 0.0f || radius <= 0.0f) {
+            return;
+        }
+
         NoiseSystem.emitNoise(new NoiseEvent(
                 world,
                 blockPos.toCenterPos(),
@@ -105,14 +107,16 @@ public final class BlockNoiseHandler {
             ServerPlayerEntity player,
             BlockPos placePos
     ) {
-        float strength = 0.45f;
-        float radius = 7.0f;
-        float hudLevel = 0.45f;
+        QuietPlaceConfig.BlockNoise config = QuietPlaceConfig.get().blockNoise;
+
+        float strength = config.placeStrength;
+        float radius = config.placeRadius;
+        float hudLevel = config.placeHudLevel;
 
         if (player.isSneaking()) {
-            strength *= QUIET_PLACE_STRENGTH_MULTIPLIER;
-            radius *= QUIET_PLACE_RADIUS_MULTIPLIER;
-            hudLevel *= QUIET_PLACE_STRENGTH_MULTIPLIER;
+            strength *= config.quietPlaceStrengthMultiplier;
+            radius *= config.quietPlaceRadiusMultiplier;
+            hudLevel *= config.quietPlaceStrengthMultiplier;
         }
 
         NoiseSystem.emitNoise(new NoiseEvent(
@@ -131,38 +135,40 @@ public final class BlockNoiseHandler {
     }
 
     private static float getBreakStrength(BlockState blockState) {
+        QuietPlaceConfig.BlockNoise config = QuietPlaceConfig.get().blockNoise;
         float hardness = blockState.getHardness(null, BlockPos.ORIGIN);
 
         if (hardness < 0.0f) {
             return 0.0f;
         }
 
-        if (hardness >= 5.0f) {
-            return 0.95f;
+        if (hardness >= config.hardHardnessThreshold) {
+            return config.hardBreakStrength;
         }
 
-        if (hardness >= 2.0f) {
-            return 0.75f;
+        if (hardness >= config.mediumHardnessThreshold) {
+            return config.mediumBreakStrength;
         }
 
-        return 0.60f;
+        return config.softBreakStrength;
     }
 
     private static float getBreakRadius(BlockState blockState) {
+        QuietPlaceConfig.BlockNoise config = QuietPlaceConfig.get().blockNoise;
         float hardness = blockState.getHardness(null, BlockPos.ORIGIN);
 
         if (hardness < 0.0f) {
             return 0.0f;
         }
 
-        if (hardness >= 5.0f) {
-            return 22.0f;
+        if (hardness >= config.hardHardnessThreshold) {
+            return config.hardBreakRadius;
         }
 
-        if (hardness >= 2.0f) {
-            return 16.0f;
+        if (hardness >= config.mediumHardnessThreshold) {
+            return config.mediumBreakRadius;
         }
 
-        return 12.0f;
+        return config.softBreakRadius;
     }
 }

@@ -27,6 +27,9 @@ public class QuietPlaceConfig {
     public Debug debug = new Debug();
     public Hud hud = new Hud();
     public PlayerNoise playerNoise = new PlayerNoise();
+    public InteractionNoise interactionNoise = new InteractionNoise();
+    public BlockNoise blockNoise = new BlockNoise();
+    public ActionNoise actionNoise = new ActionNoise();
     public DeathAngel deathAngel = new DeathAngel();
 
     public static QuietPlaceConfig get() {
@@ -53,6 +56,7 @@ public class QuietPlaceConfig {
 
             INSTANCE = loadedConfig;
             INSTANCE.fillMissingSections();
+            save();
 
             AQuietPlace.LOGGER.info("Loaded A Quiet Place config from {}", CONFIG_PATH);
         } catch (Exception exception) {
@@ -85,6 +89,18 @@ public class QuietPlaceConfig {
 
         if (this.playerNoise == null) {
             this.playerNoise = new PlayerNoise();
+        }
+
+        if (this.interactionNoise == null) {
+            this.interactionNoise = new InteractionNoise();
+        }
+
+        if (this.blockNoise == null) {
+            this.blockNoise = new BlockNoise();
+        }
+
+        if (this.actionNoise == null) {
+            this.actionNoise = new ActionNoise();
         }
 
         if (this.deathAngel == null) {
@@ -135,6 +151,82 @@ public class QuietPlaceConfig {
         public float landingMaxStrength = 1.0f;
     }
 
+    public static class InteractionNoise {
+        public float quietRadiusMultiplier = 0.20f;
+        public float quietStrengthMultiplier = 0.35f;
+
+        public float doorStrength = 0.80f;
+        public float doorRadius = 14.0f;
+        public float doorHudLevel = 0.70f;
+
+        public float trapdoorStrength = 0.65f;
+        public float trapdoorRadius = 11.0f;
+        public float trapdoorHudLevel = 0.60f;
+
+        public float fenceGateStrength = 0.65f;
+        public float fenceGateRadius = 11.0f;
+        public float fenceGateHudLevel = 0.60f;
+
+        public float containerStrength = 0.55f;
+        public float containerRadius = 9.0f;
+        public float containerHudLevel = 0.55f;
+
+        public float buttonStrength = 0.45f;
+        public float buttonRadius = 7.0f;
+        public float buttonHudLevel = 0.45f;
+
+        public float leverStrength = 0.55f;
+        public float leverRadius = 9.0f;
+        public float leverHudLevel = 0.55f;
+    }
+
+    public static class BlockNoise {
+        public float quietPlaceRadiusMultiplier = 0.35f;
+        public float quietPlaceStrengthMultiplier = 0.50f;
+
+        public float placeStrength = 0.45f;
+        public float placeRadius = 7.0f;
+        public float placeHudLevel = 0.45f;
+
+        public float softBreakStrength = 0.60f;
+        public float softBreakRadius = 12.0f;
+
+        public float mediumBreakStrength = 0.75f;
+        public float mediumBreakRadius = 16.0f;
+
+        public float hardBreakStrength = 0.95f;
+        public float hardBreakRadius = 22.0f;
+
+        public float mediumHardnessThreshold = 2.0f;
+        public float hardHardnessThreshold = 5.0f;
+    }
+
+    public static class ActionNoise {
+        public int eatingNoiseIntervalTicks = 12;
+        public int dropScanIntervalTicks = 5;
+        public double droppedItemScanRadius = 24.0;
+
+        public float attackStrength = 0.85f;
+        public float attackRadius = 14.0f;
+
+        public float damageBaseStrength = 0.55f;
+        public float damageStrengthPerHealthLost = 0.08f;
+        public float damageMaxStrength = 1.0f;
+
+        public float damageBaseRadius = 9.0f;
+        public float damageRadiusPerHealthLost = 2.0f;
+        public float damageMaxRadius = 24.0f;
+
+        public float eatStrength = 0.35f;
+        public float eatRadius = 5.0f;
+
+        public float dropItemPlayerStrength = 0.40f;
+        public float dropItemPlayerRadius = 6.0f;
+
+        public float dropItemUnknownStrength = 0.30f;
+        public float dropItemUnknownRadius = 4.0f;
+    }
+
     public static class DeathAngel {
         public boolean huntCreativePlayers = true;
 
@@ -149,6 +241,15 @@ public class QuietPlaceConfig {
         public double searchSpeed = 1.25;
         public double chaseSpeed = 1.95;
         public double runAttackSpeed = 1.75;
+
+        public float huntStrengthThreshold = 0.8f;
+        public float huntRadiusThreshold = 12.0f;
+
+        public float dangerousStrengthThreshold = 0.95f;
+        public float dangerousRadiusThreshold = 18.0f;
+
+        public float veryLoudStrengthThreshold = 1.0f;
+        public float veryLoudRadiusThreshold = 22.0f;
 
         public int attackWindupTicks = 7;
         public int runAttackAnimationTicks = 18;

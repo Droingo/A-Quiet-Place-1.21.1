@@ -1,6 +1,7 @@
 package net.droingo.aquietplace.noise;
 
 import net.droingo.aquietplace.AQuietPlace;
+import net.droingo.aquietplace.config.QuietPlaceConfig;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.block.BarrelBlock;
 import net.minecraft.block.Block;
@@ -19,9 +20,6 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 
 public final class InteractionNoiseHandler {
-    private static final float QUIET_INTERACTION_RADIUS_MULTIPLIER = 0.20f;
-    private static final float QUIET_INTERACTION_STRENGTH_MULTIPLIER = 0.35f;
-
     private InteractionNoiseHandler() {
     }
 
@@ -60,13 +58,13 @@ public final class InteractionNoiseHandler {
             BlockPos blockPos,
             BlockState blockState
     ) {
-        Block block = blockState.getBlock();
-
-        InteractionNoise interactionNoise = getInteractionNoise(block, blockState);
+        InteractionNoise interactionNoise = getInteractionNoise(blockState);
 
         if (interactionNoise == null) {
             return;
         }
+
+        QuietPlaceConfig.InteractionNoise config = QuietPlaceConfig.get().interactionNoise;
 
         boolean quiet = player.isSneaking();
 
@@ -75,18 +73,11 @@ public final class InteractionNoiseHandler {
         float hudLevel = interactionNoise.hudLevel();
 
         if (quiet) {
-            strength *= QUIET_INTERACTION_STRENGTH_MULTIPLIER;
-            radius *= QUIET_INTERACTION_RADIUS_MULTIPLIER;
-            hudLevel *= QUIET_INTERACTION_STRENGTH_MULTIPLIER;
+            strength *= config.quietStrengthMultiplier;
+            radius *= config.quietRadiusMultiplier;
+            hudLevel *= config.quietStrengthMultiplier;
         }
 
-        /*
-         * Important:
-         * Interaction noises are emitted from the block position with no source entity.
-         *
-         * This means a loud door/chest makes the Death Angel investigate the block,
-         * but it does not immediately become a perfect player chase like sprinting does.
-         */
         NoiseSystem.emitNoise(new NoiseEvent(
                 world,
                 blockPos.toCenterPos(),
@@ -102,14 +93,17 @@ public final class InteractionNoiseHandler {
         PlayerNoiseHandler.addHudNoise(player, hudLevel);
     }
 
-    private static InteractionNoise getInteractionNoise(Block block, BlockState blockState) {
+    private static InteractionNoise getInteractionNoise(BlockState blockState) {
+        QuietPlaceConfig.InteractionNoise config = QuietPlaceConfig.get().interactionNoise;
+        Block block = blockState.getBlock();
+
         if (block instanceof DoorBlock) {
             boolean currentlyOpen = blockState.contains(Properties.OPEN) && blockState.get(Properties.OPEN);
             return new InteractionNoise(
                     currentlyOpen ? NoiseType.DOOR_CLOSE : NoiseType.DOOR_OPEN,
-                    0.80f,
-                    14.0f,
-                    0.70f
+                    config.doorStrength,
+                    config.doorRadius,
+                    config.doorHudLevel
             );
         }
 
@@ -117,9 +111,9 @@ public final class InteractionNoiseHandler {
             boolean currentlyOpen = blockState.contains(Properties.OPEN) && blockState.get(Properties.OPEN);
             return new InteractionNoise(
                     currentlyOpen ? NoiseType.TRAPDOOR_CLOSE : NoiseType.TRAPDOOR_OPEN,
-                    0.65f,
-                    11.0f,
-                    0.60f
+                    config.trapdoorStrength,
+                    config.trapdoorRadius,
+                    config.trapdoorHudLevel
             );
         }
 
@@ -127,36 +121,36 @@ public final class InteractionNoiseHandler {
             boolean currentlyOpen = blockState.contains(Properties.OPEN) && blockState.get(Properties.OPEN);
             return new InteractionNoise(
                     currentlyOpen ? NoiseType.FENCE_GATE_CLOSE : NoiseType.FENCE_GATE_OPEN,
-                    0.65f,
-                    11.0f,
-                    0.60f
+                    config.fenceGateStrength,
+                    config.fenceGateRadius,
+                    config.fenceGateHudLevel
             );
         }
 
         if (block instanceof ChestBlock || block instanceof BarrelBlock) {
             return new InteractionNoise(
                     NoiseType.CONTAINER_OPEN,
-                    0.55f,
-                    9.0f,
-                    0.55f
+                    config.containerStrength,
+                    config.containerRadius,
+                    config.containerHudLevel
             );
         }
 
         if (block instanceof ButtonBlock) {
             return new InteractionNoise(
                     NoiseType.BUTTON_PRESS,
-                    0.45f,
-                    7.0f,
-                    0.45f
+                    config.buttonStrength,
+                    config.buttonRadius,
+                    config.buttonHudLevel
             );
         }
 
         if (block instanceof LeverBlock) {
             return new InteractionNoise(
                     NoiseType.LEVER_TOGGLE,
-                    0.55f,
-                    9.0f,
-                    0.55f
+                    config.leverStrength,
+                    config.leverRadius,
+                    config.leverHudLevel
             );
         }
 

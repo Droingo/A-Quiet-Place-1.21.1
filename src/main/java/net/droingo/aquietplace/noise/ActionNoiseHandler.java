@@ -1,6 +1,7 @@
 package net.droingo.aquietplace.noise;
 
 import net.droingo.aquietplace.AQuietPlace;
+import net.droingo.aquietplace.config.QuietPlaceConfig;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.minecraft.entity.Entity;
@@ -24,10 +25,6 @@ import java.util.UUID;
 public final class ActionNoiseHandler {
     private static final Map<UUID, PlayerActionState> PLAYER_STATES = new HashMap<>();
     private static final Set<UUID> KNOWN_DROPPED_ITEM_UUIDS = new HashSet<>();
-
-    private static final int EATING_NOISE_INTERVAL_TICKS = 12;
-    private static final int DROP_SCAN_INTERVAL_TICKS = 5;
-    private static final double DROPPED_ITEM_SCAN_RADIUS = 24.0;
 
     private ActionNoiseHandler() {
     }
@@ -61,13 +58,15 @@ public final class ActionNoiseHandler {
                 return ActionResult.PASS;
             }
 
+            QuietPlaceConfig.ActionNoise config = QuietPlaceConfig.get().actionNoise;
+
             emitPlayerActionNoise(
                     serverWorld,
                     serverPlayer,
                     player.getPos(),
                     NoiseType.ATTACK,
-                    0.85f,
-                    14.0f
+                    config.attackStrength,
+                    config.attackRadius
             );
 
             return ActionResult.PASS;
@@ -108,6 +107,8 @@ public final class ActionNoiseHandler {
     }
 
     private static void handleDamageNoise(ServerPlayerEntity player, PlayerActionState state) {
+        QuietPlaceConfig.ActionNoise config = QuietPlaceConfig.get().actionNoise;
+
         float currentHealth = player.getHealth();
 
         if (currentHealth >= state.lastHealth) {
@@ -116,8 +117,15 @@ public final class ActionNoiseHandler {
 
         float lostHealth = state.lastHealth - currentHealth;
 
-        float strength = Math.min(1.0f, 0.55f + lostHealth * 0.08f);
-        float radius = Math.min(24.0f, 9.0f + lostHealth * 2.0f);
+        float strength = Math.min(
+                config.damageMaxStrength,
+                config.damageBaseStrength + lostHealth * config.damageStrengthPerHealthLost
+        );
+
+        float radius = Math.min(
+                config.damageMaxRadius,
+                config.damageBaseRadius + lostHealth * config.damageRadiusPerHealthLost
+        );
 
         emitPlayerActionNoise(
                 player.getServerWorld(),
@@ -130,6 +138,8 @@ public final class ActionNoiseHandler {
     }
 
     private static void handleEatingOrDrinkingNoise(ServerPlayerEntity player, PlayerActionState state) {
+        QuietPlaceConfig.ActionNoise config = QuietPlaceConfig.get().actionNoise;
+
         if (!player.isUsingItem()) {
             return;
         }
@@ -150,22 +160,22 @@ public final class ActionNoiseHandler {
             return;
         }
 
-        NoiseType noiseType = useAction == UseAction.DRINK ? NoiseType.EAT : NoiseType.EAT;
-
         emitPlayerActionNoise(
                 player.getServerWorld(),
                 player,
                 player.getPos(),
-                noiseType,
-                0.35f,
-                5.0f
+                NoiseType.EAT,
+                config.eatStrength,
+                config.eatRadius
         );
 
-        state.eatingNoiseCooldownTicks = EATING_NOISE_INTERVAL_TICKS;
+        state.eatingNoiseCooldownTicks = config.eatingNoiseIntervalTicks;
     }
 
     private static void scanDroppedItems(MinecraftServer server) {
-        if (server.getTicks() % DROP_SCAN_INTERVAL_TICKS != 0) {
+        QuietPlaceConfig.ActionNoise config = QuietPlaceConfig.get().actionNoise;
+
+        if (server.getTicks() % config.dropScanIntervalTicks != 0) {
             return;
         }
 
@@ -177,7 +187,7 @@ public final class ActionNoiseHandler {
             }
 
             ServerWorld world = player.getServerWorld();
-            Box scanBox = player.getBoundingBox().expand(DROPPED_ITEM_SCAN_RADIUS);
+            Box scanBox = player.getBoundingBox().expand(config.droppedItemScanRadius);
 
             for (ItemEntity itemEntity : world.getEntitiesByClass(ItemEntity.class, scanBox, Entity::isAlive)) {
                 UUID itemUuid = itemEntity.getUuid();
@@ -197,16 +207,16 @@ public final class ActionNoiseHandler {
                             ownerPlayer,
                             itemEntity.getPos(),
                             NoiseType.DROP_ITEM,
-                            0.40f,
-                            6.0f
+                            config.dropItemPlayerStrength,
+                            config.dropItemPlayerRadius
                     );
                 } else {
                     emitSourceNoise(
                             world,
                             itemEntity.getPos(),
                             NoiseType.DROP_ITEM,
-                            0.30f,
-                            4.0f
+                            config.dropItemUnknownStrength,
+                            config.dropItemUnknownRadius
                     );
                 }
             }

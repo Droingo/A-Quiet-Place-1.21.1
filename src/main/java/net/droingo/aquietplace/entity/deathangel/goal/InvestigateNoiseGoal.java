@@ -6,6 +6,7 @@ import net.droingo.aquietplace.noise.NoiseSystem;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.Vec3d;
+import net.droingo.aquietplace.config.QuietPlaceConfig;
 
 import java.util.EnumSet;
 import java.util.List;
@@ -299,15 +300,11 @@ public class InvestigateNoiseGoal extends Goal {
         return this.deathAngel.shouldPlayHearReactionForHunt(this.targetSourceUuid);
     }
 
-    private boolean isDangerousPlayerNoise() {
-        return this.targetSourceUuid != null && (this.targetStrength >= 0.95f || this.targetRadius >= 18.0f);
-    }
 
-    private boolean isVeryLoudNoise() {
-        return this.targetStrength >= 1.0f || this.targetRadius >= 22.0f;
-    }
 
     private boolean shouldTriggerHunt() {
+        QuietPlaceConfig.DeathAngel config = QuietPlaceConfig.get().deathAngel;
+
         if (this.targetSourceUuid == null) {
             return false;
         }
@@ -316,7 +313,23 @@ public class InvestigateNoiseGoal extends Goal {
             return false;
         }
 
-        return this.targetStrength >= 0.8f || this.targetRadius >= 12.0f;
+        return this.targetStrength >= config.huntStrengthThreshold
+                || this.targetRadius >= config.huntRadiusThreshold;
+    }
+
+    private boolean isDangerousPlayerNoise() {
+        QuietPlaceConfig.DeathAngel config = QuietPlaceConfig.get().deathAngel;
+
+        return this.targetSourceUuid != null
+                && (this.targetStrength >= config.dangerousStrengthThreshold
+                || this.targetRadius >= config.dangerousRadiusThreshold);
+    }
+
+    private boolean isVeryLoudNoise() {
+        QuietPlaceConfig.DeathAngel config = QuietPlaceConfig.get().deathAngel;
+
+        return this.targetStrength >= config.veryLoudStrengthThreshold
+                || this.targetRadius >= config.veryLoudRadiusThreshold;
     }
 
     private boolean isHeavyInvestigation() {
