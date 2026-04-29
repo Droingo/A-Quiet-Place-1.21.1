@@ -36,7 +36,10 @@ import com.nyfaria.awcapi.entity.movement.ClimberPathNavigator;
 import net.minecraft.entity.ai.pathing.EntityNavigation;
 import net.droingo.aquietplace.entity.deathangel.goal.SearchLastKnownTargetGoal;
 import net.droingo.aquietplace.config.QuietPlaceConfig;
-
+import net.droingo.aquietplace.registry.ModSounds;
+import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvent;
 
 import java.util.UUID;
 
@@ -87,7 +90,7 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
     private int attackCooldownTicks;
 
     private int idleListenCooldownTicks;
-
+    private int idleBreathCooldownTicks;
     private int suppressHearReactionTicks;
     private UUID noisyTargetUuid;
     private int noisyTargetMemoryTicks;
@@ -162,6 +165,7 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
             tickRecentHuntTarget();
             tickLastKnownSearchMemory();
             tickLedgeHopAssist();
+            tickIdleBreathing();
             tickIdleListening();
 
         }
@@ -426,6 +430,14 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
 
         this.dataTracker.set(HEAR_REACTION_LEFT, noiseIsLeft);
         this.dataTracker.set(HEAR_REACTION_ACTIVE, true);
+
+        if (!this.getWorld().isClient()) {
+            playDeathAngelSound(
+                    ModSounds.DEATH_ANGEL_LISTEN_TWITCH,
+                    0.8f,
+                    0.85f + this.getRandom().nextFloat() * 0.25f
+            );
+        }
     }
 
 
@@ -511,6 +523,37 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
         super.move(movementType, movement);
         ClimberHelper.handleMove(this, movementType, movement, false);
     }
+    private void tickIdleBreathing() {
+        if (this.isDead() || !this.isAlive()) {
+            return;
+        }
+
+        if (this.isPlayingHearReaction()) {
+            return;
+        }
+
+        if (this.isAttackAnimationActive() || this.isRunAttackAnimationActive()) {
+            return;
+        }
+
+        if (this.idleBreathCooldownTicks > 0) {
+            this.idleBreathCooldownTicks--;
+            return;
+        }
+
+        boolean activelyHunting = this.hasNoisyTargetMemory() || this.hasLastKnownSearchPosition();
+
+        if (activelyHunting) {
+            this.idleBreathCooldownTicks = 70 + this.getRandom().nextInt(90);
+        } else {
+            this.idleBreathCooldownTicks = 120 + this.getRandom().nextInt(180);
+        }
+
+        float volume = activelyHunting ? 0.65f : 0.45f;
+        float pitch = 0.85f + this.getRandom().nextFloat() * 0.25f;
+
+        playDeathAngelSound(ModSounds.DEATH_ANGEL_IDLE_BREATH, volume, pitch);
+    }
 
     @Override
     public void jump() {
@@ -540,11 +583,27 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
     public void startAttackAnimation(int ticks) {
         this.attackAnimationTicks = Math.max(1, ticks);
         this.dataTracker.set(ATTACK_ANIMATION_ACTIVE, true);
+
+        if (!this.getWorld().isClient()) {
+            playDeathAngelSound(
+                    ModSounds.DEATH_ANGEL_ATTACK_WINDUP,
+                    0.9f,
+                    0.9f + this.getRandom().nextFloat() * 0.15f
+            );
+        }
     }
 
     public void startRunAttackAnimation(int ticks) {
         this.runAttackAnimationTicks = Math.max(1, ticks);
         this.dataTracker.set(RUN_ATTACK_ANIMATION_ACTIVE, true);
+
+        if (!this.getWorld().isClient()) {
+            playDeathAngelSound(
+                    ModSounds.DEATH_ANGEL_ATTACK_WINDUP,
+                    1.0f,
+                    0.75f + this.getRandom().nextFloat() * 0.15f
+            );
+        }
     }
 
     public boolean isAttackAnimationActive() {
@@ -672,6 +731,57 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
 
     public boolean isHearReactionLeft() {
         return this.dataTracker.get(HEAR_REACTION_LEFT);
+    }
+    @Override
+    public boolean damage(DamageSource source, float amount) {
+        boolean damaged = super.damage(source, amount);
+
+        if (damaged && !this.getWorld().isClient()) {
+            playDeathAngelSound(
+                    ModSounds.DEATH_ANGEL_HURT,
+                    0.9f,
+                    0.85f + this.getRandom().nextFloat() * 0.25f
+            );
+        }
+
+        return damaged;
+    }
+
+    public void playAttackHitSound() {
+        if (this.getWorld().isClient()) {
+            return;
+        }
+
+        playDeathAngelSound(
+                ModSounds.DEATH_ANGEL_ATTACK_HIT,
+                1.0f,
+                0.85f + this.getRandom().nextFloat() * 0.2f
+        );
+    }
+
+    public void playInvestigateGrowlSound() {
+        if (this.getWorld().isClient()) {
+            return;
+        }
+
+        playDeathAngelSound(
+                ModSounds.DEATH_ANGEL_INVESTIGATE_GROWL,
+                0.9f,
+                0.85f + this.getRandom().nextFloat() * 0.25f
+        );
+    }
+
+    private void playDeathAngelSound(SoundEvent soundEvent, float volume, float pitch) {
+        this.getWorld().playSound(
+                null,
+                this.getX(),
+                this.getY(),
+                this.getZ(),
+                soundEvent,
+                SoundCategory.HOSTILE,
+                volume,
+                pitch
+        );
     }
 
     @Override

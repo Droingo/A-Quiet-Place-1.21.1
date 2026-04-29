@@ -1,6 +1,7 @@
 package net.droingo.aquietplace;
 
 import net.droingo.aquietplace.client.hud.NoiseHudOverlay;
+import net.droingo.aquietplace.client.network.ClientGlassBottleTrapDisarmNetworking;
 import net.droingo.aquietplace.client.network.ClientNoiseNetworking;
 import net.droingo.aquietplace.client.render.entity.DeathAngelRenderer;
 import net.droingo.aquietplace.registry.ModEntities;
@@ -24,6 +25,7 @@ public class AQuietPlaceClient implements ClientModInitializer {
         NoiseHudOverlay.register();
         ClientNoisemakerNetworking.register();
         ClientItemTooltips.register();
+        ClientGlassBottleTrapDisarmNetworking.registerReceivers();
 
         BlockRenderLayerMap.INSTANCE.putBlock(
                 ModBlocks.NEWSPAPER_SOUNDPROOFING,

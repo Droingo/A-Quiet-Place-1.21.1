@@ -10,8 +10,17 @@ public final class ModSounds {
     public static final SoundEvent NOISEMAKER_START = registerSound("block.noisemaker.start");
     public static final SoundEvent NOISEMAKER_BEEP = registerSound("block.noisemaker.beep");
     public static final SoundEvent NOISEMAKER_NOISE = registerSound("block.noisemaker.noise");
+
     public static final SoundEvent GLASS_BOTTLE_TRAP_TRIGGER_0 = registerSound("block.glass_bottle_trap.trigger_0");
     public static final SoundEvent GLASS_BOTTLE_TRAP_TRIGGER_1 = registerSound("block.glass_bottle_trap.trigger_1");
+
+    public static final SoundEvent DEATH_ANGEL_ALERT_CLICK = registerSound("entity.death_angel.alert_click");
+    public static final SoundEvent DEATH_ANGEL_ATTACK_HIT = registerSound("entity.death_angel.attack_hit");
+    public static final SoundEvent DEATH_ANGEL_ATTACK_WINDUP = registerSound("entity.death_angel.attack_windup");
+    public static final SoundEvent DEATH_ANGEL_HURT = registerSound("entity.death_angel.hurt");
+    public static final SoundEvent DEATH_ANGEL_IDLE_BREATH = registerSound("entity.death_angel.idle_breath");
+    public static final SoundEvent DEATH_ANGEL_INVESTIGATE_GROWL = registerSound("entity.death_angel.investigate_growl");
+    public static final SoundEvent DEATH_ANGEL_LISTEN_TWITCH = registerSound("entity.death_angel.listen_twitch");
 
     private ModSounds() {
     }

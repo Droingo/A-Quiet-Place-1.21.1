@@ -30,6 +30,14 @@ import net.droingo.aquietplace.entity.deathangel.DeathAngelEntity;
 import net.droingo.aquietplace.registry.ModEntities;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.Heightmap;
+import net.droingo.aquietplace.network.GlassBottleTrapOpenDisarmPayload;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.item.ItemStack;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.Text;
+
+import java.util.UUID;
 
 import java.util.List;
 
@@ -38,12 +46,22 @@ public class GlassBottleTrapBlockEntity extends BlockEntity implements GeoBlockE
     private static final RawAnimation TRIGGERED_0 = RawAnimation.begin().thenPlay("triggered_0");
     private static final RawAnimation TRIGGERED_1 = RawAnimation.begin().thenPlay("triggered_1");
 
+    private static final int DISARM_REQUIRED_CLICKS = 3;
+    private static final int DISARM_TIME_LIMIT_TICKS = 32;
+    private static final double DISARM_MAX_DISTANCE_SQUARED = 36.0;
+
+    private UUID disarmingPlayerUuid = null;
+    private int disarmClicks = 0;
+    private int disarmTicksRemaining = 0;
+
     private int idleSwingCooldownTicks = 40;
     private int idleSwingTicks = 0;
 
     private int triggerStage = 0;
     private int triggerTicks = 0;
     private boolean emittedNoise = false;
+
+    private boolean disarmReady = false;
 
     private final AnimatableInstanceCache animationCache = GeckoLibUtil.createInstanceCache(this);
 
@@ -88,6 +106,11 @@ public class GlassBottleTrapBlockEntity extends BlockEntity implements GeoBlockE
         QuietPlaceConfig.GlassBottleTrap config = QuietPlaceConfig.get().glassBottleTrap;
 
         if (!config.enabled) {
+            return;
+        }
+
+        if (hasActiveDisarmSession()) {
+            tickDisarmSession(world, pos, config);
             return;
         }
 
@@ -362,6 +385,211 @@ public class GlassBottleTrapBlockEntity extends BlockEntity implements GeoBlockE
         ));
     }
 
+    private boolean hasActiveDisarmSession() {
+        return this.disarmingPlayerUuid != null;
+    }
+
+    public void handleDisarmInteraction(ServerPlayerEntity player) {
+        if (!(this.world instanceof ServerWorld)) {
+            return;
+        }
+
+        if (this.triggerStage != 0) {
+            player.sendMessage(Text.literal("The trap is already triggered!"), true);
+            return;
+        }
+
+        if (hasActiveDisarmSession()) {
+            if (player.getUuid().equals(this.disarmingPlayerUuid)) {
+                openDisarmScreen(player);
+            } else {
+                player.sendMessage(Text.literal("Someone is already disarming this trap."), true);
+            }
+
+            return;
+        }
+
+        this.disarmingPlayerUuid = player.getUuid();
+        this.disarmReady = false;
+        this.disarmClicks = 0;
+        this.disarmTicksRemaining = 0;
+
+        player.sendMessage(Text.literal("Prepare to disarm the trap."), true);
+        openDisarmScreen(player);
+
+        markDirty();
+    }
+
+    private void openDisarmScreen(ServerPlayerEntity player) {
+        ServerPlayNetworking.send(
+                player,
+                new GlassBottleTrapOpenDisarmPayload(
+                        this.pos,
+                        DISARM_REQUIRED_CLICKS,
+                        DISARM_TIME_LIMIT_TICKS
+                )
+        );
+    }
+
+    public void handleDisarmClick(ServerPlayerEntity player) {
+        if (!(this.world instanceof ServerWorld serverWorld)) {
+            return;
+        }
+
+        if (!hasActiveDisarmSession()) {
+            return;
+        }
+
+        if (!this.disarmReady) {
+            return;
+        }
+
+        if (!player.getUuid().equals(this.disarmingPlayerUuid)) {
+            return;
+        }
+
+        if (player.squaredDistanceTo(this.pos.toCenterPos()) > DISARM_MAX_DISTANCE_SQUARED) {
+            failDisarm(serverWorld, this.pos, QuietPlaceConfig.get().glassBottleTrap, player, "You moved too far!");
+            return;
+        }
+
+        if (this.triggerStage != 0) {
+            return;
+        }
+
+        this.disarmClicks++;
+
+        if (this.disarmClicks >= DISARM_REQUIRED_CLICKS) {
+            disarmSuccessfully(serverWorld, player);
+            return;
+        }
+
+        player.sendMessage(
+                Text.literal("Disarming... " + this.disarmClicks + " / " + DISARM_REQUIRED_CLICKS),
+                true
+        );
+
+        markDirty();
+    }
+
+    private void tickDisarmSession(ServerWorld world, BlockPos pos, QuietPlaceConfig.GlassBottleTrap config) {
+        ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(this.disarmingPlayerUuid);
+
+        if (player == null) {
+            failDisarm(world, pos, config, null, null);
+            return;
+        }
+
+        if (player.squaredDistanceTo(pos.toCenterPos()) > DISARM_MAX_DISTANCE_SQUARED) {
+            failDisarm(world, pos, config, player, "You moved too far!");
+            return;
+        }
+
+        if (!this.disarmReady) {
+            markDirty();
+            return;
+        }
+
+        this.disarmTicksRemaining--;
+
+        if (this.disarmTicksRemaining <= 0) {
+            failDisarm(world, pos, config, player, "Too slow!");
+            return;
+        }
+
+        markDirty();
+    }
+
+    private void disarmSuccessfully(ServerWorld world, ServerPlayerEntity player) {
+        clearDisarmSession();
+
+        ItemStack returnedTrap = new ItemStack(this.getCachedState().getBlock().asItem());
+
+        world.spawnParticles(
+                ParticleTypes.POOF,
+                this.pos.getX() + 0.5,
+                this.pos.getY() + 0.35,
+                this.pos.getZ() + 0.5,
+                8,
+                0.15,
+                0.10,
+                0.15,
+                0.01
+        );
+
+        world.playSound(
+                null,
+                player.getBlockPos(),
+                SoundEvents.ENTITY_ITEM_PICKUP,
+                SoundCategory.PLAYERS,
+                0.7f,
+                1.0f
+        );
+
+        world.removeBlock(this.pos, false);
+
+        boolean inserted = player.getInventory().insertStack(returnedTrap);
+
+        if (!inserted || !returnedTrap.isEmpty()) {
+            player.dropItem(returnedTrap, false);
+        }
+
+        player.sendMessage(Text.literal("Trap disarmed."), true);
+    }
+
+    private void failDisarm(
+            ServerWorld world,
+            BlockPos pos,
+            QuietPlaceConfig.GlassBottleTrap config,
+            ServerPlayerEntity player,
+            String message
+    ) {
+        clearDisarmSession();
+
+        if (player != null && message != null) {
+            player.sendMessage(Text.literal(message), true);
+        }
+
+        startTriggered0(world, pos, config);
+    }
+
+    private void clearDisarmSession() {
+        this.disarmingPlayerUuid = null;
+        this.disarmReady = false;
+        this.disarmClicks = 0;
+        this.disarmTicksRemaining = 0;
+
+        markDirty();
+    }
+    public void handleDisarmReady(ServerPlayerEntity player) {
+        if (!(this.world instanceof ServerWorld serverWorld)) {
+            return;
+        }
+
+        if (!hasActiveDisarmSession()) {
+            return;
+        }
+
+        if (!player.getUuid().equals(this.disarmingPlayerUuid)) {
+            return;
+        }
+
+        if (this.triggerStage != 0) {
+            return;
+        }
+
+        if (player.squaredDistanceTo(this.pos.toCenterPos()) > DISARM_MAX_DISTANCE_SQUARED) {
+            failDisarm(serverWorld, this.pos, QuietPlaceConfig.get().glassBottleTrap, player, "You moved too far!");
+            return;
+        }
+
+        this.disarmReady = true;
+        this.disarmTicksRemaining = DISARM_TIME_LIMIT_TICKS;
+
+        player.sendMessage(Text.literal("Disarm started!"), true);
+
+        markDirty();
+    }
     @Override
     protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup) {
         super.writeNbt(nbt, registryLookup);
@@ -378,6 +606,11 @@ public class GlassBottleTrapBlockEntity extends BlockEntity implements GeoBlockE
         this.triggerStage = nbt.getInt("TriggerStage");
         this.triggerTicks = nbt.getInt("TriggerTicks");
         this.emittedNoise = nbt.getBoolean("EmittedNoise");
+
+        this.disarmingPlayerUuid = null;
+        this.disarmClicks = 0;
+        this.disarmReady = false;
+        this.disarmTicksRemaining = 0;
     }
 
     @Override

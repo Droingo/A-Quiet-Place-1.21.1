@@ -28,5 +28,61 @@
     "sounds": [
       "aquietplace:block/glass_bottle_trap_trigger_1"
     ]
+  },
+
+  "entity.death_angel.alert_click": {
+    "subtitle": "subtitles.aquietplace.death_angel_alert_click",
+    "sounds": [
+      "aquietplace:entity/death_angel/alert_click_0",
+      "aquietplace:entity/death_angel/alert_click_1",
+      "aquietplace:entity/death_angel/alert_click_2"
+    ]
+  },
+  "entity.death_angel.attack_hit": {
+    "subtitle": "subtitles.aquietplace.death_angel_attack_hit",
+    "sounds": [
+      "aquietplace:entity/death_angel/attack_hit_0",
+      "aquietplace:entity/death_angel/attack_hit_1"
+    ]
+  },
+  "entity.death_angel.attack_windup": {
+    "subtitle": "subtitles.aquietplace.death_angel_attack_windup",
+    "sounds": [
+      "aquietplace:entity/death_angel/attack_windup"
+    ]
+  },
+  "entity.death_angel.hurt": {
+    "subtitle": "subtitles.aquietplace.death_angel_hurt",
+    "sounds": [
+      "aquietplace:entity/death_angel/hurt_0",
+      "aquietplace:entity/death_angel/hurt_1"
+    ]
+  },
+  "entity.death_angel.idle_breath": {
+    "subtitle": "subtitles.aquietplace.death_angel_idle_breath",
+    "sounds": [
+      "aquietplace:entity/death_angel/idle_breath_0",
+      "aquietplace:entity/death_angel/idle_breath_1",
+      "aquietplace:entity/death_angel/idle_breath_2",
+      "aquietplace:entity/death_angel/idle_breath_3",
+      "aquietplace:entity/death_angel/idle_breath_4"
+    ]
+  },
+  "entity.death_angel.investigate_growl": {
+    "subtitle": "subtitles.aquietplace.death_angel_investigate_growl",
+    "sounds": [
+      "aquietplace:entity/death_angel/investigate_growl_0",
+      "aquietplace:entity/death_angel/investigate_growl_1",
+      "aquietplace:entity/death_angel/investigate_growl_2",
+      "aquietplace:entity/death_angel/investigate_growl_3"
+    ]
+  },
+  "entity.death_angel.listen_twitch": {
+    "subtitle": "subtitles.aquietplace.death_angel_listen_twitch",
+    "sounds": [
+      "aquietplace:entity/death_angel/listen_twitch_0",
+      "aquietplace:entity/death_angel/listen_twitch_1",
+      "aquietplace:entity/death_angel/listen_twitch_2"
+    ]
   }
 }

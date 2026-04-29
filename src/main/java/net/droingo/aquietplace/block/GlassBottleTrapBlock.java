@@ -145,6 +145,20 @@ public class GlassBottleTrapBlock extends BlockWithEntity {
     }
 
     @Override
+    protected float calcBlockBreakingDelta(
+            BlockState state,
+            PlayerEntity player,
+            BlockView world,
+            BlockPos pos
+    ) {
+        if (player.isCreative()) {
+            return super.calcBlockBreakingDelta(state, player, world, pos);
+        }
+
+        return 0.0f;
+    }
+
+    @Override
     protected VoxelShape getOutlineShape(
             BlockState state,
             BlockView world,
