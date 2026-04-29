@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "facing=north,trigger_stage=0": {},
+    "facing=south,trigger_stage=0": {},
+    "facing=east,trigger_stage=0": {},
+    "facing=west,trigger_stage=0": {},
+
+    "facing=north,trigger_stage=1": {},
+    "facing=south,trigger_stage=1": {},
+    "facing=east,trigger_stage=1": {},
+    "facing=west,trigger_stage=1": {},
+
+    "facing=north,trigger_stage=2": {},
+    "facing=south,trigger_stage=2": {},
+    "facing=east,trigger_stage=2": {},
+    "facing=west,trigger_stage=2": {}
+  }
+}

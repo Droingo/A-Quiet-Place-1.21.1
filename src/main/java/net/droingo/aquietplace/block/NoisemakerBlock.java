@@ -182,6 +182,30 @@ public class NoisemakerBlock extends BlockWithEntity {
         }
     }
 
+    @Override
+    protected void neighborUpdate(
+            BlockState state,
+            World world,
+            BlockPos pos,
+            net.minecraft.block.Block sourceBlock,
+            BlockPos sourcePos,
+            boolean notify
+    ) {
+        super.neighborUpdate(state, world, pos, sourceBlock, sourcePos, notify);
+
+        if (world.isClient()) {
+            return;
+        }
+
+        if (!world.isReceivingRedstonePower(pos)) {
+            return;
+        }
+
+        if (world.getBlockEntity(pos) instanceof NoisemakerBlockEntity noisemaker) {
+            noisemaker.startCountdownFromRedstone();
+        }
+    }
+
 
     @Override
     protected ActionResult onUse(
@@ -217,12 +241,14 @@ public class NoisemakerBlock extends BlockWithEntity {
             return ActionResult.PASS;
         }
 
-        ServerPlayNetworking.send(serverPlayer, new NoisemakerOpenScreenPayload(
+        ServerPlayNetworking.send(serverPlayer, NoisemakerOpenScreenPayload.create(
                 pos,
                 noisemaker.getDelaySeconds(),
                 noisemaker.getRadius(),
                 noisemaker.getStrength(),
-                noisemaker.isArmed()
+                noisemaker.isArmed(),
+                noisemaker.isActive(),
+                noisemaker.getCountdownTicks()
         ));
 
         return ActionResult.SUCCESS;

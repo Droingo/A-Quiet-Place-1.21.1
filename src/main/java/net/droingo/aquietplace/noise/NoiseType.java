@@ -33,6 +33,7 @@ public enum NoiseType {
 
     VOICE,
     NOISEMAKER,
+    GLASS_BOTTLE_TRAP,
 
     DECOY,
     TRAP,

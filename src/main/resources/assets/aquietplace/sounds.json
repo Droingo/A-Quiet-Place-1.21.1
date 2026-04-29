@@ -1,0 +1,32 @@
+{
+  "block.noisemaker.start": {
+    "subtitle": "subtitles.aquietplace.noisemaker_start",
+    "sounds": [
+      "aquietplace:block/noisemaker_start"
+    ]
+  },
+  "block.noisemaker.beep": {
+    "subtitle": "subtitles.aquietplace.noisemaker_beep",
+    "sounds": [
+      "aquietplace:block/noisemaker_beep"
+    ]
+  },
+  "block.noisemaker.noise": {
+    "subtitle": "subtitles.aquietplace.noisemaker_noise",
+    "sounds": [
+      "aquietplace:block/noisemaker_noise"
+    ]
+  },
+  "block.glass_bottle_trap.trigger_0": {
+    "subtitle": "subtitles.aquietplace.glass_bottle_trap_trigger_0",
+    "sounds": [
+      "aquietplace:block/glass_bottle_trap_trigger_0"
+    ]
+  },
+  "block.glass_bottle_trap.trigger_1": {
+    "subtitle": "subtitles.aquietplace.glass_bottle_trap_trigger_1",
+    "sounds": [
+      "aquietplace:block/glass_bottle_trap_trigger_1"
+    ]
+  }
+}

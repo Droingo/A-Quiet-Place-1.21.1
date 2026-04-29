@@ -16,6 +16,7 @@ import net.droingo.aquietplace.config.QuietPlaceConfig;
 import net.droingo.aquietplace.registry.ModBlocks;
 import net.droingo.aquietplace.registry.ModBlockEntities;
 import net.droingo.aquietplace.loot.ModLootTableModifiers;
+import net.droingo.aquietplace.registry.ModSounds;
 
 public class AQuietPlace implements ModInitializer {
     public static final String MOD_ID = "aquietplace";
@@ -33,6 +34,7 @@ public class AQuietPlace implements ModInitializer {
         ModBlockEntities.register();
         ModEntities.register();
         ModItems.register();
+        ModSounds.register();
         ModLootTableModifiers.register();
 
         NoiseSystem.initialize();

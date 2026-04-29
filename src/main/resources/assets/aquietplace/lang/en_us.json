@@ -2,5 +2,30 @@
   "entity.aquietplace.death_angel": "Death Angel",
   "item.aquietplace.death_angel_spawn_egg": "Death Angel Spawn Egg",
   "block.aquietplace.noisemaker": "Noisemaker",
-  "item.aquietplace.scrap_electronics": "Scrap Electronics"
+  "block.aquietplace.newspaper_soundproofing": "Newspaper Soundproofing",
+  "item.aquietplace.scrap_electronics": "Scrap Electronics",
+
+  "subtitles.aquietplace.glass_bottle_trap_trigger_0": "Bottles rattle",
+  "subtitles.aquietplace.glass_bottle_trap_trigger_1": "Bottles crash",
+  "subtitles.aquietplace.noisemaker_start": "Noisemaker starts",
+  "subtitles.aquietplace.noisemaker_beep": "Noisemaker beeps",
+  "subtitles.aquietplace.noisemaker_noise": "Noisemaker emits static",
+
+
+  "tooltip.aquietplace.noisemaker.one_time_use": "One-time use.",
+  "tooltip.aquietplace.noisemaker.use_cautiously": "Use cautiously.",
+  "tooltip.aquietplace.hold_ctrl": "Hold CTRL for more info",
+  "tooltip.aquietplace.noisemaker.one_time_use": "One-time use.",
+  "tooltip.aquietplace.noisemaker.configure": "Configure delay, radius, and strength before arming.",
+  "tooltip.aquietplace.noisemaker.redstone": "Can be triggered by redstone.",
+  "tooltip.aquietplace.noisemaker.use_cautiously": "Use cautiously.",
+  "tooltip.aquietplace.newspaper.suppresses_noise": "Suppresses nearby noise.",
+  "tooltip.aquietplace.newspaper.effective_range": "Best within %s blocks of the sound source.",
+  "tooltip.aquietplace.newspaper.max_reduction": "Maximum noise radius reduction: %s%%.",
+  "tooltip.aquietplace.glass_bottle_trap.single_use": "Single-use trap.",
+  "tooltip.aquietplace.glass_bottle_trap.trigger_radius": "Triggers living entities within %s blocks.",
+  "tooltip.aquietplace.glass_bottle_trap.noise_radius": "Bottle crash noise radius: %s blocks.",
+  "tooltip.aquietplace.glass_bottle_trap.attracts_death_angels": "Attracts Death Angels.",
+
+  "block.aquietplace.glass_bottle_trap": "Glass Bottle Trap"
 }

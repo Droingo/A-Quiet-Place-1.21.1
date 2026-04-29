@@ -6,6 +6,7 @@ import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityT
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
+import net.droingo.aquietplace.block.entity.GlassBottleTrapBlockEntity;
 import net.minecraft.util.Identifier;
 
 public final class ModBlockEntities {
@@ -14,7 +15,14 @@ public final class ModBlockEntities {
             Identifier.of(AQuietPlace.MOD_ID, "noisemaker"),
             FabricBlockEntityTypeBuilder.create(NoisemakerBlockEntity::new, ModBlocks.NOISEMAKER).build()
     );
-
+    public static final BlockEntityType<GlassBottleTrapBlockEntity> GLASS_BOTTLE_TRAP = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE,
+            Identifier.of(AQuietPlace.MOD_ID, "glass_bottle_trap"),
+            FabricBlockEntityTypeBuilder.create(
+                    GlassBottleTrapBlockEntity::new,
+                    ModBlocks.GLASS_BOTTLE_TRAP
+            ).build()
+    );
     private ModBlockEntities() {
     }
 

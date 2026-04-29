@@ -13,8 +13,12 @@ public record NoisemakerOpenScreenPayload(
         int delaySeconds,
         float radius,
         float strength,
-        boolean armed
+        int flags,
+        int countdownTicks
 ) implements CustomPayload {
+    private static final int ARMED_FLAG = 1;
+    private static final int ACTIVE_FLAG = 2;
+
     public static final Id<NoisemakerOpenScreenPayload> ID = new Id<>(
             Identifier.of(AQuietPlace.MOD_ID, "open_noisemaker_screen")
     );
@@ -28,10 +32,49 @@ public record NoisemakerOpenScreenPayload(
             NoisemakerOpenScreenPayload::radius,
             PacketCodecs.FLOAT,
             NoisemakerOpenScreenPayload::strength,
-            PacketCodecs.BOOL,
-            NoisemakerOpenScreenPayload::armed,
+            PacketCodecs.INTEGER,
+            NoisemakerOpenScreenPayload::flags,
+            PacketCodecs.INTEGER,
+            NoisemakerOpenScreenPayload::countdownTicks,
             NoisemakerOpenScreenPayload::new
     );
+
+    public static NoisemakerOpenScreenPayload create(
+            BlockPos pos,
+            int delaySeconds,
+            float radius,
+            float strength,
+            boolean armed,
+            boolean active,
+            int countdownTicks
+    ) {
+        int flags = 0;
+
+        if (armed) {
+            flags |= ARMED_FLAG;
+        }
+
+        if (active) {
+            flags |= ACTIVE_FLAG;
+        }
+
+        return new NoisemakerOpenScreenPayload(
+                pos,
+                delaySeconds,
+                radius,
+                strength,
+                flags,
+                countdownTicks
+        );
+    }
+
+    public boolean armed() {
+        return (this.flags & ARMED_FLAG) != 0;
+    }
+
+    public boolean active() {
+        return (this.flags & ACTIVE_FLAG) != 0;
+    }
 
     @Override
     public Id<? extends CustomPayload> getId() {

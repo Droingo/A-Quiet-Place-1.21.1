@@ -33,6 +33,8 @@ public class QuietPlaceConfig {
     public DeathAngel deathAngel = new DeathAngel();
     public VoiceChatNoise voiceChatNoise = new VoiceChatNoise();
     public Soundproofing soundproofing = new Soundproofing();
+    public Noisemaker noisemaker = new Noisemaker();
+    public GlassBottleTrap glassBottleTrap = new GlassBottleTrap();
 
     public static QuietPlaceConfig get() {
         return INSTANCE;
@@ -86,6 +88,12 @@ public class QuietPlaceConfig {
         }
         if (this.voiceChatNoise == null) {
             this.voiceChatNoise = new VoiceChatNoise();
+        }
+        if (this.noisemaker == null) {
+            this.noisemaker = new Noisemaker();
+        }
+        if (this.glassBottleTrap == null) {
+            this.glassBottleTrap = new GlassBottleTrap();
         }
 
         if (this.hud == null) {
@@ -165,6 +173,45 @@ public class QuietPlaceConfig {
         public int packetIntervalTicks = 2;
         public int noiseHoldTicks = 12;
         public float noiseDecayPerTick = 0.025f;
+    }
+
+    public static class Noisemaker {
+        public int outputDurationTicks = 20 * 9;
+        public int outputNoisePulses = 4;
+
+        public float startSoundVolume = 0.9f;
+        public float beepSoundVolume = 0.75f;
+        public float outputSoundVolume = 1.0f;
+        public int defaultDelaySeconds = 5;
+        public float defaultRadius = 24.0f;
+        public float defaultStrength = 1.0f;
+
+        public int minDelaySeconds = 0;
+        public int maxDelaySeconds = 60;
+
+        public float minRadius = 1.0f;
+        public float maxRadius = 128.0f;
+
+        public float minStrength = 0.05f;
+        public float maxStrength = 1.0f;
+
+        public boolean breaksAfterUse = true;
+
+        public int salvageScrapElectronicsMin = 0;
+        public int salvageScrapElectronicsMax = 1;
+
+        public int salvageRedstoneMin = 1;
+        public int salvageRedstoneMax = 2;
+
+        public int salvageIronNuggetsMin = 2;
+        public int salvageIronNuggetsMax = 5;
+
+        public int breakParticleCount = 24;
+
+        /*
+         * If true, redstone power starts the noisemaker countdown.
+         */
+        public boolean redstoneStartsCountdown = true;
     }
 
     public static class PlayerNoise {
@@ -332,5 +379,47 @@ public class QuietPlaceConfig {
         public int attackCooldownTicks = 18;
         public int postAttackMemoryTicks = 100;
         public int postAttackSuppressHearTicks = 100;
+    }
+    public static class GlassBottleTrap {
+        public boolean enabled = true;
+        public boolean disarmEnabled = true;
+        public int disarmRequiredSteps = 3;
+        public int disarmMinWaitTicks = 18;
+        public int disarmMaxWaitTicks = 45;
+        public int disarmPromptTicks = 14;
+        public double disarmMaxDistance = 3.0;
+
+        /*
+         * If true, sneaking players can carefully approach/disarm without triggering it.
+         */
+        public boolean sneakingPlayersAvoidTrigger = true;
+        public double triggerRadius = 0.75;
+
+        public int triggered0Ticks = 20;
+        public int triggered1Ticks = 20;
+
+        public float noiseStrength = 1.0f;
+        public float noiseRadius = 28.0f;
+
+        public float trigger0SoundVolume = 0.8f;
+        public float trigger1SoundVolume = 1.0f;
+
+        public int breakParticleCount = 18;
+        /*
+         * If enabled, a triggered bottle trap can spawn a Death Angel some distance away.
+         * Useful for event scenarios where a trap should create immediate danger.
+         */
+        public boolean spawnDeathAngelOnTrigger = false;
+
+        public float spawnDeathAngelChance = 1.0f;
+
+        public int spawnDeathAngelMinDistance = 18;
+        public int spawnDeathAngelMaxDistance = 32;
+
+        /*
+         * Safety cap so repeated traps do not flood an area with Death Angels.
+         */
+        public int maxSpawnedDeathAngelsNearby = 2;
+        public double nearbyDeathAngelCheckRadius = 48.0;
     }
 }
