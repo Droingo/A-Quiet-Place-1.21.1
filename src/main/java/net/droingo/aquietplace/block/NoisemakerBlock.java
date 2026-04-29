@@ -26,6 +26,8 @@ import net.droingo.aquietplace.registry.ModBlockEntities;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.item.ItemStack;
 
 public class NoisemakerBlock extends BlockWithEntity {
     public static final MapCodec<NoisemakerBlock> CODEC = createCodec(NoisemakerBlock::new);
@@ -53,12 +55,17 @@ public class NoisemakerBlock extends BlockWithEntity {
             2.0, 0.0, 3.0,
             14.0, 8.0, 13.0
     );
+
     private static void pickupNoisemaker(World world, BlockPos pos, ServerPlayerEntity player) {
         ItemStack noisemakerStack = new ItemStack(ModBlocks.NOISEMAKER.asItem());
 
+        if (world.getBlockEntity(pos) instanceof NoisemakerBlockEntity noisemaker) {
+            noisemaker.writeSettingsToStack(noisemakerStack);
+        }
+
         /*
          * Remove the block without normal drops.
-         * We are manually giving the item to the player.
+         * We are manually giving the item to the player with saved settings.
          */
         world.breakBlock(pos, false, player);
 
@@ -154,6 +161,25 @@ public class NoisemakerBlock extends BlockWithEntity {
     @Override
     protected void appendProperties(StateManager.Builder<net.minecraft.block.Block, BlockState> builder) {
         builder.add(FACING, ARMED, ACTIVE, BLINK);
+    }
+
+    @Override
+    public void onPlaced(
+            World world,
+            BlockPos pos,
+            BlockState state,
+            LivingEntity placer,
+            ItemStack itemStack
+    ) {
+        super.onPlaced(world, pos, state, placer, itemStack);
+
+        if (world.isClient()) {
+            return;
+        }
+
+        if (world.getBlockEntity(pos) instanceof NoisemakerBlockEntity noisemaker) {
+            noisemaker.readSettingsFromStack(itemStack);
+        }
     }
 
 

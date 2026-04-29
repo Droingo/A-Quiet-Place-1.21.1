@@ -10,10 +10,18 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.NbtComponent;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 
 public class NoisemakerBlockEntity extends BlockEntity {
     private static final int BLINK_INTERVAL_TICKS = 10;
+
+    private static final String ITEM_DATA_KEY = "NoisemakerSettings";
+    private static final String DELAY_SECONDS_KEY = "DelaySeconds";
+    private static final String RADIUS_KEY = "Radius";
+    private static final String STRENGTH_KEY = "Strength";
 
     private int delaySeconds = 5;
     private float radius = 24.0f;
@@ -24,6 +32,8 @@ public class NoisemakerBlockEntity extends BlockEntity {
     private boolean blink = false;
     private int countdownTicks = 0;
     private int blinkTicks = 0;
+
+
 
     public NoisemakerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.NOISEMAKER, pos, state);
@@ -51,6 +61,51 @@ public class NoisemakerBlockEntity extends BlockEntity {
 
     public boolean isActive() {
         return this.active;
+    }
+
+    public void writeSettingsToStack(ItemStack stack) {
+        NbtCompound settingsNbt = new NbtCompound();
+        settingsNbt.putInt(DELAY_SECONDS_KEY, this.delaySeconds);
+        settingsNbt.putFloat(RADIUS_KEY, this.radius);
+        settingsNbt.putFloat(STRENGTH_KEY, this.strength);
+
+        NbtCompound rootNbt = new NbtCompound();
+        rootNbt.put(ITEM_DATA_KEY, settingsNbt);
+
+        stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(rootNbt));
+    }
+
+    public void readSettingsFromStack(ItemStack stack) {
+        NbtComponent customData = stack.get(DataComponentTypes.CUSTOM_DATA);
+
+        if (customData == null) {
+            return;
+        }
+
+        NbtCompound rootNbt = customData.copyNbt();
+
+        if (!rootNbt.contains(ITEM_DATA_KEY)) {
+            return;
+        }
+
+        NbtCompound settingsNbt = rootNbt.getCompound(ITEM_DATA_KEY);
+
+        this.delaySeconds = clamp(settingsNbt.getInt(DELAY_SECONDS_KEY), 0, 60);
+        this.radius = clamp(settingsNbt.getFloat(RADIUS_KEY), 1.0f, 128.0f);
+        this.strength = clamp(settingsNbt.getFloat(STRENGTH_KEY), 0.05f, 1.0f);
+
+        /*
+         * Picked-up noisemakers keep their settings, but are always safe/off
+         * when placed again.
+         */
+        this.armed = false;
+        this.active = false;
+        this.blink = false;
+        this.countdownTicks = 0;
+        this.blinkTicks = 0;
+
+        this.markDirty();
+        syncBlockState();
     }
 
     public void setSettings(int delaySeconds, float radius, float strength, boolean armed) {
