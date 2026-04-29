@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import net.droingo.aquietplace.config.QuietPlaceConfig;
+
 public final class NoiseSystem {
     private static final List<NoiseEvent> RECENT_NOISES = new ArrayList<>();
 
@@ -21,6 +23,11 @@ public final class NoiseSystem {
     }
 
     public static void initialize() {
+        QuietPlaceConfig config = QuietPlaceConfig.get();
+
+        debugLoggingEnabled = config.debug.noiseLoggingEnabled;
+        debugParticlesEnabled = config.debug.noiseParticlesEnabled;
+
         AQuietPlace.LOGGER.info("Noise system initialized");
     }
 

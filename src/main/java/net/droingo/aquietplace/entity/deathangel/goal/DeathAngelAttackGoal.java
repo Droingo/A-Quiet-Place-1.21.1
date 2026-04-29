@@ -4,6 +4,7 @@ import net.droingo.aquietplace.entity.deathangel.DeathAngelEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.player.PlayerEntity;
+import net.droingo.aquietplace.config.QuietPlaceConfig;
 
 import java.util.EnumSet;
 
@@ -76,13 +77,13 @@ public class DeathAngelAttackGoal extends Goal {
 
     @Override
     public void start() {
-        this.windupTicks = ATTACK_WINDUP_TICKS;
+        this.windupTicks = QuietPlaceConfig.get().deathAngel.attackWindupTicks;
         this.repathCooldownTicks = 0;
         this.hasDealtDamage = false;
 
         refreshTargetMemory();
 
-        this.deathAngel.startRunAttackAnimation(RUN_ATTACK_ANIMATION_TICKS);
+        this.deathAngel.startRunAttackAnimation(QuietPlaceConfig.get().deathAngel.runAttackAnimationTicks);
     }
 
     @Override
@@ -93,7 +94,7 @@ public class DeathAngelAttackGoal extends Goal {
         this.windupTicks = 0;
         this.repathCooldownTicks = 0;
         this.hasDealtDamage = false;
-        this.deathAngel.setAttackCooldown(ATTACK_COOLDOWN_TICKS);
+        this.deathAngel.setAttackCooldown(QuietPlaceConfig.get().deathAngel.attackCooldownTicks);
     }
 
     @Override
@@ -109,7 +110,10 @@ public class DeathAngelAttackGoal extends Goal {
         this.repathCooldownTicks--;
 
         if (this.repathCooldownTicks <= 0) {
-            this.deathAngel.getNavigation().startMovingTo(this.targetEntity, RUN_ATTACK_SPEED);
+            this.deathAngel.getNavigation().startMovingTo(
+                    this.targetEntity,
+                    QuietPlaceConfig.get().deathAngel.runAttackSpeed
+            );
             this.repathCooldownTicks = 4;
         }
 
@@ -138,15 +142,13 @@ public class DeathAngelAttackGoal extends Goal {
             return;
         }
 
-        this.deathAngel.rememberNoisyTarget(this.targetEntity.getUuid(), POST_ATTACK_MEMORY_TICKS);
-        this.deathAngel.suppressHearReaction(POST_ATTACK_SUPPRESS_HEAR_TICKS);
+        QuietPlaceConfig.DeathAngel config = QuietPlaceConfig.get().deathAngel;
+
+        this.deathAngel.rememberNoisyTarget(this.targetEntity.getUuid(), config.postAttackMemoryTicks);
+        this.deathAngel.suppressHearReaction(config.postAttackSuppressHearTicks);
     }
 
     private boolean isValidTarget(Entity entity) {
-        if (!(entity instanceof PlayerEntity player)) {
-            return false;
-        }
-
-        return player.isAlive() && !player.isSpectator();
+        return this.deathAngel.canHuntEntity(entity);
     }
 }

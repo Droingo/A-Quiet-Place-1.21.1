@@ -312,6 +312,10 @@ public class InvestigateNoiseGoal extends Goal {
             return false;
         }
 
+        if (!this.deathAngel.canHuntEntity(this.targetSourceUuid)) {
+            return false;
+        }
+
         return this.targetStrength >= 0.8f || this.targetRadius >= 12.0f;
     }
 

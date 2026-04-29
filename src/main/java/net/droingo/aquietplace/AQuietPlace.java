@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 import net.droingo.aquietplace.noise.InteractionNoiseHandler;
 import net.droingo.aquietplace.noise.BlockNoiseHandler;
 import net.droingo.aquietplace.noise.ActionNoiseHandler;
-
+import net.droingo.aquietplace.config.QuietPlaceConfig;
 
 public class AQuietPlace implements ModInitializer {
     public static final String MOD_ID = "aquietplace";
@@ -21,6 +21,8 @@ public class AQuietPlace implements ModInitializer {
     @Override
     public void onInitialize() {
         LOGGER.info("Initializing A Quiet Place");
+
+        QuietPlaceConfig.load();
 
         ModNetworking.registerPayloads();
 

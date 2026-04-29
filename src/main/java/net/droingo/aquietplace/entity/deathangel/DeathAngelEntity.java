@@ -35,6 +35,7 @@ import net.minecraft.entity.MovementType;
 import com.nyfaria.awcapi.entity.movement.ClimberPathNavigator;
 import net.minecraft.entity.ai.pathing.EntityNavigation;
 import net.droingo.aquietplace.entity.deathangel.goal.SearchLastKnownTargetGoal;
+import net.droingo.aquietplace.config.QuietPlaceConfig;
 
 
 import java.util.UUID;
@@ -107,12 +108,14 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
     }
 
     public static DefaultAttributeContainer.Builder createDeathAngelAttributes() {
+        QuietPlaceConfig.DeathAngel config = QuietPlaceConfig.get().deathAngel;
+
         return HostileEntity.createHostileAttributes()
-                .add(EntityAttributes.GENERIC_MAX_HEALTH, 80.0)
-                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.30)
-                .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 12.0)
-                .add(EntityAttributes.GENERIC_FOLLOW_RANGE, 48.0)
-                .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, 0.8);
+                .add(EntityAttributes.GENERIC_MAX_HEALTH, config.maxHealth)
+                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, config.baseMovementSpeed)
+                .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, config.attackDamage)
+                .add(EntityAttributes.GENERIC_FOLLOW_RANGE, config.followRange)
+                .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, config.knockbackResistance);
     }
 
 
@@ -128,24 +131,17 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
 
     @Override
     protected void initGoals() {
+        QuietPlaceConfig.DeathAngel config = QuietPlaceConfig.get().deathAngel;
+
         this.goalSelector.add(0, new SwimGoal(this));
 
-        // Highest priority: attack a noisy target if close enough.
         this.goalSelector.add(1, new DeathAngelAttackGoal(this));
+        this.goalSelector.add(2, new ChaseNoisyTargetGoal(this, config.chaseSpeed));
+        this.goalSelector.add(3, new InvestigateNoiseGoal(this, config.investigateSpeed));
+        this.goalSelector.add(4, new SearchLastKnownTargetGoal(this, config.searchSpeed));
 
-        // If the Death Angel remembers a noisy player, chase them.
-        this.goalSelector.add(2, new ChaseNoisyTargetGoal(this, 1.95));
+        this.goalSelector.add(5, new WanderAroundFarGoal(this, config.wanderSpeed));
 
-        // New noises should interrupt searching immediately.
-        this.goalSelector.add(3, new InvestigateNoiseGoal(this, 1.15));
-
-        // If no active noise/hunt exists, search around the last known player position.
-        this.goalSelector.add(4, new SearchLastKnownTargetGoal(this, 1.25));
-
-        // Temporary basic movement so we can confirm pathfinding and animations work.
-        this.goalSelector.add(5, new WanderAroundFarGoal(this, 0.85));
-
-        // Temporary visual behavior. Later, the Death Angel will mostly react to sound instead of sight.
         this.goalSelector.add(6, new LookAtEntityGoal(this, PlayerEntity.class, 16.0f));
         this.goalSelector.add(7, new LookAroundGoal(this));
     }
@@ -567,6 +563,38 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
 
         this.recentHuntTargetUuid = targetUuid;
         this.recentHuntTargetTicks = Math.max(this.recentHuntTargetTicks, 20 * 10);
+    }
+
+    public boolean canHuntEntity(UUID entityUuid) {
+        if (entityUuid == null) {
+            return false;
+        }
+
+        Entity entity = this.getWorld() instanceof ServerWorld serverWorld
+                ? serverWorld.getEntity(entityUuid)
+                : null;
+
+        return this.canHuntEntity(entity);
+    }
+
+    public boolean canHuntEntity(Entity entity) {
+        if (!(entity instanceof PlayerEntity player)) {
+            return false;
+        }
+
+        if (!player.isAlive()) {
+            return false;
+        }
+
+        if (player.isSpectator()) {
+            return false;
+        }
+
+        if (player.isCreative() && !QuietPlaceConfig.get().deathAngel.huntCreativePlayers) {
+            return false;
+        }
+
+        return true;
     }
 
     public boolean isRecentHuntTarget(UUID targetUuid) {

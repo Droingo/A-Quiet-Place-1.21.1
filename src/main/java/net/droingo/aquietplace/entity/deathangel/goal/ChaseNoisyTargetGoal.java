@@ -140,18 +140,10 @@ public class ChaseNoisyTargetGoal extends Goal {
     }
 
     private boolean isValidTarget(Entity entity) {
-        if (!(entity instanceof PlayerEntity player)) {
+        if (!this.deathAngel.canHuntEntity(entity)) {
             return false;
         }
 
-        if (!player.isAlive()) {
-            return false;
-        }
-
-        if (player.isSpectator()) {
-            return false;
-        }
-
-        return this.deathAngel.squaredDistanceTo(player) <= MAX_CHASE_RANGE * MAX_CHASE_RANGE;
+        return this.deathAngel.squaredDistanceTo(entity) <= MAX_CHASE_RANGE * MAX_CHASE_RANGE;
     }
 }

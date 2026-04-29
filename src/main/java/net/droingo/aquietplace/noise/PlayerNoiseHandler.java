@@ -1,6 +1,7 @@
 package net.droingo.aquietplace.noise;
 
 import net.droingo.aquietplace.AQuietPlace;
+import net.droingo.aquietplace.config.QuietPlaceConfig;
 import net.droingo.aquietplace.network.NoiseLevelPayload;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -16,15 +17,6 @@ import java.util.UUID;
 
 public final class PlayerNoiseHandler {
     private static final Map<UUID, PlayerNoiseState> PLAYER_STATES = new HashMap<>();
-
-    private static final int WALK_NOISE_INTERVAL_TICKS = 14;
-    private static final int SPRINT_NOISE_INTERVAL_TICKS = 8;
-    private static final int SNEAK_NOISE_INTERVAL_TICKS = 24;
-    private static final int HUD_PACKET_INTERVAL_TICKS = 2;
-
-    private static final double MIN_HORIZONTAL_DISTANCE_PER_TICK = 0.015;
-    private static final float NOISE_LEVEL_DECAY_PER_TICK = 0.025f;
-    private static final int HUD_NOISE_HOLD_TICKS = 12;
 
     private PlayerNoiseHandler() {
     }
@@ -87,12 +79,14 @@ public final class PlayerNoiseHandler {
     }
 
     private static void tickHudNoiseDecay(PlayerNoiseState state) {
+        QuietPlaceConfig.Hud hudConfig = QuietPlaceConfig.get().hud;
+
         if (state.noiseHoldTicks > 0) {
             state.noiseHoldTicks--;
             return;
         }
 
-        state.currentNoiseLevel = Math.max(0.0f, state.currentNoiseLevel - NOISE_LEVEL_DECAY_PER_TICK);
+        state.currentNoiseLevel = Math.max(0.0f, state.currentNoiseLevel - hudConfig.noiseDecayPerTick);
     }
 
     private static double getHorizontalDistance(Vec3d previousPosition, Vec3d currentPosition) {
@@ -108,11 +102,13 @@ public final class PlayerNoiseHandler {
             boolean onGround,
             double horizontalDistanceThisTick
     ) {
+        QuietPlaceConfig.PlayerNoise config = QuietPlaceConfig.get().playerNoise;
+
         if (!onGround) {
             return;
         }
 
-        if (horizontalDistanceThisTick < MIN_HORIZONTAL_DISTANCE_PER_TICK) {
+        if (horizontalDistanceThisTick < config.minHorizontalDistancePerTick) {
             return;
         }
 
@@ -124,14 +120,14 @@ public final class PlayerNoiseHandler {
             emitPlayerNoise(
                     player,
                     NoiseType.PLAYER_SNEAK,
-                    0.25f,
-                    1.5f,
+                    config.sneakStrength,
+                    config.sneakRadius,
                     true,
                     true
             );
 
-            setHudNoiseLevel(state, 0.15f);
-            state.movementNoiseCooldownTicks = SNEAK_NOISE_INTERVAL_TICKS;
+            setHudNoiseLevel(state, config.sneakHudLevel);
+            state.movementNoiseCooldownTicks = config.sneakIntervalTicks;
             return;
         }
 
@@ -139,28 +135,28 @@ public final class PlayerNoiseHandler {
             emitPlayerNoise(
                     player,
                     NoiseType.PLAYER_SPRINT,
-                    1.0f,
-                    18.0f,
+                    config.sprintStrength,
+                    config.sprintRadius,
                     true,
                     true
             );
 
-            setHudNoiseLevel(state, 1.0f);
-            state.movementNoiseCooldownTicks = SPRINT_NOISE_INTERVAL_TICKS;
+            setHudNoiseLevel(state, config.sprintHudLevel);
+            state.movementNoiseCooldownTicks = config.sprintIntervalTicks;
             return;
         }
 
         emitPlayerNoise(
                 player,
                 NoiseType.PLAYER_WALK,
-                0.45f,
-                5.0f,
+                config.walkStrength,
+                config.walkRadius,
                 true,
                 true
         );
 
-        setHudNoiseLevel(state, 0.45f);
-        state.movementNoiseCooldownTicks = WALK_NOISE_INTERVAL_TICKS;
+        setHudNoiseLevel(state, config.walkHudLevel);
+        state.movementNoiseCooldownTicks = config.walkIntervalTicks;
     }
 
     private static void handleJumpNoise(
@@ -168,6 +164,8 @@ public final class PlayerNoiseHandler {
             PlayerNoiseState state,
             boolean onGround
     ) {
+        QuietPlaceConfig.PlayerNoise config = QuietPlaceConfig.get().playerNoise;
+
         boolean justLeftGround = state.wasOnGround && !onGround;
 
         if (!justLeftGround) {
@@ -181,13 +179,13 @@ public final class PlayerNoiseHandler {
         emitPlayerNoise(
                 player,
                 NoiseType.PLAYER_JUMP,
-                0.65f,
-                8.0f,
+                config.jumpStrength,
+                config.jumpRadius,
                 true,
                 true
         );
 
-        setHudNoiseLevel(state, 0.65f);
+        setHudNoiseLevel(state, config.jumpHudLevel);
     }
 
     private static void handleLandingNoise(
@@ -195,18 +193,27 @@ public final class PlayerNoiseHandler {
             PlayerNoiseState state,
             boolean onGround
     ) {
+        QuietPlaceConfig.PlayerNoise config = QuietPlaceConfig.get().playerNoise;
+
         boolean justLanded = !state.wasOnGround && onGround;
 
         if (!justLanded) {
             return;
         }
 
-        if (state.airTicks < 6) {
+        if (state.airTicks < config.minimumLandingAirTicks) {
             return;
         }
 
-        float radius = Math.min(30.0f, 4.0f + state.airTicks * 0.75f);
-        float strength = Math.min(1.0f, 0.35f + state.airTicks * 0.035f);
+        float radius = Math.min(
+                config.landingMaxRadius,
+                config.landingBaseRadius + state.airTicks * config.landingRadiusPerAirTick
+        );
+
+        float strength = Math.min(
+                config.landingMaxStrength,
+                config.landingBaseStrength + state.airTicks * config.landingStrengthPerAirTick
+        );
 
         emitPlayerNoise(
                 player,
@@ -230,8 +237,10 @@ public final class PlayerNoiseHandler {
     }
 
     private static void setHudNoiseLevel(PlayerNoiseState state, float noiseLevel) {
+        QuietPlaceConfig.Hud hudConfig = QuietPlaceConfig.get().hud;
+
         state.currentNoiseLevel = Math.max(state.currentNoiseLevel, noiseLevel);
-        state.noiseHoldTicks = HUD_NOISE_HOLD_TICKS;
+        state.noiseHoldTicks = hudConfig.noiseHoldTicks;
     }
 
     private static void emitPlayerNoise(
@@ -255,11 +264,13 @@ public final class PlayerNoiseHandler {
     }
 
     private static void sendNoiseHudUpdate(ServerPlayerEntity player, PlayerNoiseState state) {
+        QuietPlaceConfig.Hud hudConfig = QuietPlaceConfig.get().hud;
+
         if (state.hudPacketCooldownTicks > 0) {
             return;
         }
 
-        state.hudPacketCooldownTicks = HUD_PACKET_INTERVAL_TICKS;
+        state.hudPacketCooldownTicks = hudConfig.packetIntervalTicks;
 
         if (!ServerPlayNetworking.canSend(player, NoiseLevelPayload.ID)) {
             return;
