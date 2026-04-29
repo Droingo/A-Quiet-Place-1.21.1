@@ -67,6 +67,20 @@ public final class AQuietPlaceCommands {
                                         )
                                 )
                         )
+                        .then(literal("voice")
+                                .then(literal("status")
+                                        .executes(context -> sendVoiceStatus(context.getSource()))
+                                )
+
+                                .then(literal("enabled")
+                                        .then(argument("enabled", BoolArgumentType.bool())
+                                                .executes(context -> setVoiceNoiseEnabled(
+                                                        context.getSource(),
+                                                        BoolArgumentType.getBool(context, "enabled")
+                                                ))
+                                        )
+                                )
+                        )
 
                         .then(literal("config")
                                 .then(literal("reload")
@@ -151,6 +165,33 @@ public final class AQuietPlaceCommands {
         NoiseSystem.emitNoise(noiseEvent);
 
         sendFeedback(source, "Debug noise emitted with radius " + radius);
+
+        return 1;
+    }
+    private static int setVoiceNoiseEnabled(ServerCommandSource source, boolean enabled) {
+        QuietPlaceConfig.get().voiceChatNoise.enabled = enabled;
+        QuietPlaceConfig.save();
+
+        sendFeedback(source, "Voice chat noise " + getEnabledText(enabled));
+        sendFeedback(source, "Saved to config/aquietplace.json");
+
+        return 1;
+    }
+
+    private static int sendVoiceStatus(ServerCommandSource source) {
+        QuietPlaceConfig.VoiceChatNoise config = QuietPlaceConfig.get().voiceChatNoise;
+
+        sendFeedback(source, "A Quiet Place Voice Chat Status:");
+        sendFeedback(source, "Enabled: " + getEnabledText(config.enabled));
+        sendFeedback(source, "Packet cooldown ticks: " + config.packetCooldownTicks);
+        sendFeedback(source, "Minimum RMS: " + config.minimumRms);
+        sendFeedback(source, "RMS strength multiplier: " + config.rmsStrengthMultiplier);
+        sendFeedback(source, "Minimum strength: " + config.minimumStrength);
+        sendFeedback(source, "Maximum strength: " + config.maximumStrength);
+        sendFeedback(source, "Minimum radius: " + config.minimumRadius);
+        sendFeedback(source, "Maximum radius: " + config.maximumRadius);
+        sendFeedback(source, "Whisper radius multiplier: " + config.whisperRadiusMultiplier);
+        sendFeedback(source, "Whisper strength multiplier: " + config.whisperStrengthMultiplier);
 
         return 1;
     }
