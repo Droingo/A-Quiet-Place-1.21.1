@@ -14,7 +14,7 @@ public class DeathAngelAttackGoal extends Goal {
     private static final int RUN_ATTACK_ANIMATION_TICKS = 18;
     private static final int ATTACK_COOLDOWN_TICKS = 18;
     private static final int POST_ATTACK_MEMORY_TICKS = 20 * 5;
-    private static final double RUN_ATTACK_SPEED = 1.45;
+    private static final double RUN_ATTACK_SPEED = 1.75;
     private static final int POST_ATTACK_SUPPRESS_HEAR_TICKS = 20 * 5;
 
     private final DeathAngelEntity deathAngel;

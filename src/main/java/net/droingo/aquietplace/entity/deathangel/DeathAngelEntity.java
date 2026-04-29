@@ -34,6 +34,7 @@ import com.nyfaria.awcapi.ClimberHelper;
 import net.minecraft.entity.MovementType;
 import com.nyfaria.awcapi.entity.movement.ClimberPathNavigator;
 import net.minecraft.entity.ai.pathing.EntityNavigation;
+import net.droingo.aquietplace.entity.deathangel.goal.SearchLastKnownTargetGoal;
 
 
 import java.util.UUID;
@@ -84,12 +85,20 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
     private int runAttackAnimationTicks;
     private int attackCooldownTicks;
 
+    private int idleListenCooldownTicks;
+
     private int suppressHearReactionTicks;
     private UUID noisyTargetUuid;
     private int noisyTargetMemoryTicks;
 
     private UUID recentHuntTargetUuid;
     private int recentHuntTargetTicks;
+
+    private Vec3d lastKnownSearchPosition;
+    private int lastKnownSearchTicks;
+
+    private int ledgeHopCooldownTicks;
+    private Vec3d lastLedgeHopPosition;
 
     public DeathAngelEntity(EntityType<? extends DeathAngelEntity> entityType, World world) {
         super(entityType, world);
@@ -125,10 +134,13 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
         this.goalSelector.add(1, new DeathAngelAttackGoal(this));
 
         // If the Death Angel remembers a noisy player, chase them.
-        this.goalSelector.add(2, new ChaseNoisyTargetGoal(this, 1.35));
+        this.goalSelector.add(2, new ChaseNoisyTargetGoal(this, 1.95));
 
-        // Otherwise, investigate sound positions.
+        // New noises should interrupt searching immediately.
         this.goalSelector.add(3, new InvestigateNoiseGoal(this, 1.15));
+
+        // If no active noise/hunt exists, search around the last known player position.
+        this.goalSelector.add(4, new SearchLastKnownTargetGoal(this, 1.25));
 
         // Temporary basic movement so we can confirm pathfinding and animations work.
         this.goalSelector.add(5, new WanderAroundFarGoal(this, 0.85));
@@ -152,6 +164,9 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
             tickNoisyTargetMemory();
             tickSuppressHearReaction();
             tickRecentHuntTarget();
+            tickLastKnownSearchMemory();
+            tickLedgeHopAssist();
+            tickIdleListening();
 
         }
 
@@ -180,6 +195,71 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
         if (this.hearReactionTicks <= 0) {
             this.dataTracker.set(HEAR_REACTION_ACTIVE, false);
         }
+    }
+
+    private void tickLedgeHopAssist() {
+        if (this.ledgeHopCooldownTicks > 0) {
+            this.ledgeHopCooldownTicks--;
+        }
+
+        if (!this.hasNoisyTargetMemory()) {
+            this.lastLedgeHopPosition = this.getPos();
+            return;
+        }
+
+        if (this.isPlayingHearReaction() || this.isAttackAnimationActive() || this.isRunAttackAnimationActive()) {
+            this.lastLedgeHopPosition = this.getPos();
+            return;
+        }
+
+        if (this.getNavigation().isIdle()) {
+            this.lastLedgeHopPosition = this.getPos();
+            return;
+        }
+
+        if (this.ledgeHopCooldownTicks > 0) {
+            this.lastLedgeHopPosition = this.getPos();
+            return;
+        }
+
+        Vec3d currentPosition = this.getPos();
+
+        if (this.lastLedgeHopPosition == null) {
+            this.lastLedgeHopPosition = currentPosition;
+            return;
+        }
+
+        double horizontalMovedSquared = getHorizontalDistanceSquared(this.lastLedgeHopPosition, currentPosition);
+        boolean barelyMoved = horizontalMovedSquared < 0.015 * 0.015;
+
+        /*
+         * This is intentionally conservative:
+         * only help when it is hunting, trying to path, and barely moving.
+         * That usually means it is stuck on a wall/ground transition or ledge lip.
+         */
+        if (!barelyMoved) {
+            this.lastLedgeHopPosition = currentPosition;
+            return;
+        }
+
+        Vec3d forward = Vec3d.fromPolar(0.0f, this.getYaw()).normalize();
+
+        this.setVelocity(
+                this.getVelocity().x + forward.x * 0.18,
+                0.34,
+                this.getVelocity().z + forward.z * 0.18
+        );
+
+        this.velocityDirty = true;
+        this.fallDistance = 0.0f;
+        this.ledgeHopCooldownTicks = 16;
+        this.lastLedgeHopPosition = currentPosition;
+    }
+
+    private double getHorizontalDistanceSquared(Vec3d first, Vec3d second) {
+        double deltaX = second.x - first.x;
+        double deltaZ = second.z - first.z;
+        return deltaX * deltaX + deltaZ * deltaZ;
     }
 
 
@@ -214,6 +294,8 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
         }
     }
 
+
+
     private void tickRecentHuntTarget() {
         if (this.recentHuntTargetTicks <= 0) {
             this.recentHuntTargetUuid = null;
@@ -241,6 +323,50 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
         return this.suppressHearReactionTicks > 0;
     }
 
+    private void tickIdleListening() {
+        if (this.isPlayingHearReaction()) {
+            return;
+        }
+
+        if (this.isAttackAnimationActive() || this.isRunAttackAnimationActive()) {
+            return;
+        }
+
+        if (this.hasNoisyTargetMemory()) {
+            return;
+        }
+
+        if (this.hasLastKnownSearchPosition()) {
+            return;
+        }
+
+        if (!this.getNavigation().isIdle()) {
+            return;
+        }
+
+        if (this.idleListenCooldownTicks > 0) {
+            this.idleListenCooldownTicks--;
+            return;
+        }
+
+        this.idleListenCooldownTicks = 100 + this.getRandom().nextInt(160);
+
+        if (this.getRandom().nextFloat() > 0.45f) {
+            return;
+        }
+
+        double angle = this.getRandom().nextDouble() * Math.PI * 2.0;
+        double distance = 4.0 + this.getRandom().nextDouble() * 6.0;
+
+        Vec3d fakeListenPosition = this.getPos().add(
+                Math.cos(angle) * distance,
+                0.0,
+                Math.sin(angle) * distance
+        );
+
+        this.playHearReaction(fakeListenPosition);
+    }
+
     private void tickNoisyTargetMemory() {
         if (this.noisyTargetMemoryTicks <= 0) {
             this.noisyTargetUuid = null;
@@ -254,6 +380,35 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
             this.noisyTargetUuid = null;
             this.dataTracker.set(CHASING_NOISY_TARGET, false);
         }
+    }
+    private void tickLastKnownSearchMemory() {
+        if (this.lastKnownSearchTicks <= 0) {
+            this.lastKnownSearchPosition = null;
+            return;
+        }
+
+        this.lastKnownSearchTicks--;
+
+        if (this.lastKnownSearchTicks <= 0) {
+            this.lastKnownSearchPosition = null;
+        }
+    }
+
+    public void rememberLastKnownSearchPosition(Vec3d position, int ticks) {
+        if (position == null || ticks <= 0) {
+            return;
+        }
+
+        this.lastKnownSearchPosition = position;
+        this.lastKnownSearchTicks = Math.max(this.lastKnownSearchTicks, ticks);
+    }
+
+    public boolean hasLastKnownSearchPosition() {
+        return this.lastKnownSearchPosition != null && this.lastKnownSearchTicks > 0;
+    }
+
+    public Vec3d getLastKnownSearchPosition() {
+        return this.lastKnownSearchPosition;
     }
 
     public void playHearReaction(Vec3d noisePosition) {
@@ -370,6 +525,7 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
         super.jump();
     }
 
+
     public void startAttackAnimation(int ticks) {
         this.attackAnimationTicks = Math.max(1, ticks);
         this.dataTracker.set(ATTACK_ANIMATION_ACTIVE, true);
@@ -413,6 +569,22 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
         this.recentHuntTargetTicks = Math.max(this.recentHuntTargetTicks, 20 * 10);
     }
 
+    public boolean isRecentHuntTarget(UUID targetUuid) {
+        return targetUuid != null
+                && targetUuid.equals(this.recentHuntTargetUuid)
+                && this.recentHuntTargetTicks > 0;
+    }
+
+    public boolean isActivelyHuntingOrSearching() {
+        return this.hasNoisyTargetMemory()
+                || this.hasLastKnownSearchPosition()
+                || this.isAttackAnimationActive()
+                || this.isRunAttackAnimationActive()
+                || this.shouldSuppressHearReaction();
+    }
+
+
+
     public boolean shouldPlayHearReactionForHunt(UUID targetUuid) {
         if (targetUuid == null) {
             return true;
@@ -422,12 +594,14 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
             return false;
         }
 
-        if (targetUuid.equals(this.recentHuntTargetUuid) && this.recentHuntTargetTicks > 0) {
+        if (this.isRecentHuntTarget(targetUuid)) {
             return false;
         }
 
         return true;
     }
+
+
 
     public boolean hasNoisyTargetMemory() {
         return this.noisyTargetUuid != null && this.noisyTargetMemoryTicks > 0;

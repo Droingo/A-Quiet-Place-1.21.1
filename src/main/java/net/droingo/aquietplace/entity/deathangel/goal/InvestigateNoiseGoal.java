@@ -87,8 +87,14 @@ public class InvestigateNoiseGoal extends Goal {
         this.lastHandledNoiseGameTime = this.targetNoiseGameTime;
 
         boolean triggersHunt = this.shouldTriggerHunt();
-        boolean shouldPlayHear = !triggersHunt || this.deathAngel.shouldPlayHearReactionForHunt(this.targetSourceUuid);
 
+        /*
+         * Decide before rememberNoisyTarget(...) refreshes recent hunt memory.
+         *
+         * Dangerous player noise should play the hearing animation when this is not
+         * already the same recent hunted player.
+         */
+        boolean shouldPlayHear = this.shouldPlayHearBeforeHunt();
         if (triggersHunt) {
             this.deathAngel.rememberNoisyTarget(this.targetSourceUuid, this.getHuntMemoryTicks());
         }
@@ -198,7 +204,10 @@ public class InvestigateNoiseGoal extends Goal {
          * while the player keeps sprinting/jumping.
          */
         if (this.shouldTriggerHunt()) {
-            boolean shouldPlayHear = this.deathAngel.shouldPlayHearReactionForHunt(this.targetSourceUuid);
+            /*
+             * Decide before rememberNoisyTarget(...) updates hunt memory.
+             */
+            boolean shouldPlayHear = this.shouldPlayHearBeforeHunt();
 
             this.deathAngel.rememberNoisyTarget(this.targetSourceUuid, this.getHuntMemoryTicks());
             this.investigateTicks = Math.max(this.investigateTicks, 20 * 4);
@@ -254,6 +263,48 @@ public class InvestigateNoiseGoal extends Goal {
                 this.targetPosition.z,
                 this.getInvestigationSpeed()
         );
+    }
+
+    private boolean shouldPlayHearBeforeHunt() {
+        /*
+         * Very loud noises are immediate threats.
+         * Example: big falls, huge impacts, future traps/decoys.
+         * The Death Angel should snap into action instead of giving the player
+         * several seconds while HearLeft/HearRight plays.
+         */
+        if (this.isVeryLoudNoise()) {
+            return false;
+        }
+
+        if (!this.shouldTriggerHunt()) {
+            return true;
+        }
+
+        /*
+         * If the Death Angel is already actively pressuring players,
+         * any new loud player noise should redirect the hunt immediately.
+         */
+        if (this.deathAngel.isActivelyHuntingOrSearching()) {
+            return false;
+        }
+
+        /*
+         * Calm/idle first dangerous sound:
+         * play HearLeft/HearRight before chasing, unless it crossed the very-loud threshold above.
+         */
+        if (this.isDangerousPlayerNoise()) {
+            return true;
+        }
+
+        return this.deathAngel.shouldPlayHearReactionForHunt(this.targetSourceUuid);
+    }
+
+    private boolean isDangerousPlayerNoise() {
+        return this.targetSourceUuid != null && (this.targetStrength >= 0.95f || this.targetRadius >= 18.0f);
+    }
+
+    private boolean isVeryLoudNoise() {
+        return this.targetStrength >= 1.0f || this.targetRadius >= 22.0f;
     }
 
     private boolean shouldTriggerHunt() {
