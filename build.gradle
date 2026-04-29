@@ -7,6 +7,15 @@ version = project.mod_version
 group = project.maven_group
 
 repositories {
+
+    maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+        content {
+            includeGroup("maven.modrinth")
+        }
+    }
+
     maven {
         name = "GeckoLib"
         url = "https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/"
@@ -20,12 +29,10 @@ repositories {
         url = uri("https://maven.100media.dev/releases")
     }
 
+
     maven {
-        name = "Modrinth"
-        url = "https://api.modrinth.com/maven"
-        content {
-            includeGroup("maven.modrinth")
-        }
+        name = "MaxHenkel"
+        url = "https://maven.maxhenkel.de/repository/public"
     }
 }
 
@@ -52,6 +59,14 @@ dependencies {
     modImplementation files("libs/awcapi-fabric-1.21.1-1.0.2.jar")
     // Fallback to try if the official Maven coordinate still fails:
     // modImplementation "maven.modrinth:awcapi:1.0.0"
+
+    implementation "de.maxhenkel.voicechat:voicechat-api:${voicechat_api_version}"
+
+// Loads Simple Voice Chat in your dev runClient/runServer environment.
+    modRuntimeOnly "maven.modrinth:simple-voice-chat:fabric-${voicechat_version}"
+
+// Provides the voicechat_api mod ID in dev for Fabric.
+    modRuntimeOnly "de.maxhenkel.voicechat:voicechat-api:${voicechat_api_version}:fabric-stub"
 }
 
 processResources {

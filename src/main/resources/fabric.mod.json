@@ -23,6 +23,9 @@
 		],
       "client": [
         "net.droingo.aquietplace.AQuietPlaceClient"
+      ],
+      "voicechat": [
+        "net.droingo.aquietplace.voicechat.QuietPlaceVoicechatPlugin"
       ]
 	},
 	"mixins": [],

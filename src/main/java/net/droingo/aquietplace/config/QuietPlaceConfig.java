@@ -31,6 +31,7 @@ public class QuietPlaceConfig {
     public BlockNoise blockNoise = new BlockNoise();
     public ActionNoise actionNoise = new ActionNoise();
     public DeathAngel deathAngel = new DeathAngel();
+    public VoiceChatNoise voiceChatNoise = new VoiceChatNoise();
 
     public static QuietPlaceConfig get() {
         return INSTANCE;
@@ -82,6 +83,9 @@ public class QuietPlaceConfig {
         if (this.debug == null) {
             this.debug = new Debug();
         }
+        if (this.voiceChatNoise == null) {
+            this.voiceChatNoise = new VoiceChatNoise();
+        }
 
         if (this.hud == null) {
             this.hud = new Hud();
@@ -112,6 +116,45 @@ public class QuietPlaceConfig {
         public boolean noiseParticlesEnabled = true;
         public boolean noiseLoggingEnabled = true;
         public boolean deathAngelAmbientParticlesEnabled = true;
+    }
+
+    public static class VoiceChatNoise {
+        public boolean enabled = true;
+
+        /*
+         * How often voice packets can create gameplay noise per player.
+         * 5 ticks = up to 4 voice noise events per second per speaking player.
+         */
+        public int packetCooldownTicks = 5;
+
+        /*
+         * Ignore extremely quiet decoded audio.
+         * Raise this if breathing/background noise triggers too much.
+         */
+        public float minimumRms = 0.015f;
+
+        /*
+         * Converts decoded microphone RMS into gameplay strength.
+         * Higher = voice becomes dangerous faster.
+         */
+        public float rmsStrengthMultiplier = 8.0f;
+
+        public float minimumStrength = 0.20f;
+        public float maximumStrength = 1.0f;
+
+        public float minimumRadius = 3.0f;
+        public float maximumRadius = 28.0f;
+
+        /*
+         * Whispering through Simple Voice Chat is quieter.
+         */
+        public float whisperRadiusMultiplier = 0.45f;
+        public float whisperStrengthMultiplier = 0.60f;
+
+        /*
+         * HUD level multiplier. Usually same as strength.
+         */
+        public float hudMultiplier = 1.0f;
     }
 
     public static class Hud {
