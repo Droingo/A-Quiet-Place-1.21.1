@@ -13,6 +13,7 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.util.Identifier;
+import net.droingo.aquietplace.block.NoisemakerBlock;
 
 public final class ModBlocks {
     public static final Block NEWSPAPER_SOUNDPROOFING = registerBlockWithItem(
@@ -24,14 +25,22 @@ public final class ModBlocks {
                     .strength(0.2f)
             )
     );
+    public static final Block NOISEMAKER = registerBlockWithItem(
+            "noisemaker",
+            new NoisemakerBlock(AbstractBlock.Settings.copy(Blocks.IRON_BLOCK)
+                    .nonOpaque()
+                    .strength(1.5f)
+            )
+    );
 
     private ModBlocks() {
     }
 
     public static void register() {
-        ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries ->
-                entries.add(NEWSPAPER_SOUNDPROOFING)
-        );
+        ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries -> {
+            entries.add(NEWSPAPER_SOUNDPROOFING);
+            entries.add(NOISEMAKER);
+        });
 
         AQuietPlace.LOGGER.info("Registered blocks for {}", AQuietPlace.MOD_ID);
     }

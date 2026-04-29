@@ -1,4 +1,6 @@
 {
   "entity.aquietplace.death_angel": "Death Angel",
-  "item.aquietplace.death_angel_spawn_egg": "Death Angel Spawn Egg"
+  "item.aquietplace.death_angel_spawn_egg": "Death Angel Spawn Egg",
+  "block.aquietplace.noisemaker": "Noisemaker",
+  "item.aquietplace.scrap_electronics": "Scrap Electronics"
 }

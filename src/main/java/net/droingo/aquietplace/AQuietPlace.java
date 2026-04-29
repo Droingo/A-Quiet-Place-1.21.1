@@ -14,6 +14,8 @@ import net.droingo.aquietplace.noise.BlockNoiseHandler;
 import net.droingo.aquietplace.noise.ActionNoiseHandler;
 import net.droingo.aquietplace.config.QuietPlaceConfig;
 import net.droingo.aquietplace.registry.ModBlocks;
+import net.droingo.aquietplace.registry.ModBlockEntities;
+import net.droingo.aquietplace.loot.ModLootTableModifiers;
 
 public class AQuietPlace implements ModInitializer {
     public static final String MOD_ID = "aquietplace";
@@ -28,8 +30,10 @@ public class AQuietPlace implements ModInitializer {
         ModNetworking.registerPayloads();
 
         ModBlocks.register();
+        ModBlockEntities.register();
         ModEntities.register();
         ModItems.register();
+        ModLootTableModifiers.register();
 
         NoiseSystem.initialize();
         PlayerNoiseHandler.register();

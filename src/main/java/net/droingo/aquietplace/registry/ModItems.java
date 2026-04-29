@@ -21,11 +21,28 @@ public final class ModItems {
             )
     );
 
+    public static final Item SCRAP_ELECTRONICS = registerItem(
+            "scrap_electronics",
+            new Item(new Item.Settings())
+    );
+
+    private static Item registerItem(String name, Item item) {
+        return Registry.register(
+                Registries.ITEM,
+                Identifier.of(AQuietPlace.MOD_ID, name),
+                item
+        );
+    }
+
     private ModItems() {
     }
 
     public static void register() {
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.SPAWN_EGGS).register(entries -> entries.add(DEATH_ANGEL_SPAWN_EGG));
+
+        ItemGroupEvents.modifyEntriesEvent(ItemGroups.INGREDIENTS).register(entries ->
+                entries.add(SCRAP_ELECTRONICS)
+        );
 
         AQuietPlace.LOGGER.info("Registered items for {}", AQuietPlace.MOD_ID);
     }

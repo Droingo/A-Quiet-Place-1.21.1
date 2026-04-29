@@ -32,6 +32,7 @@ public enum NoiseType {
     DROP_ITEM,
 
     VOICE,
+    NOISEMAKER,
 
     DECOY,
     TRAP,

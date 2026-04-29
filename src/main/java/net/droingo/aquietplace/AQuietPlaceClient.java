@@ -9,6 +9,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.droingo.aquietplace.registry.ModBlocks;
 import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
 import net.minecraft.client.render.RenderLayer;
+import net.droingo.aquietplace.client.network.ClientNoisemakerNetworking;
 
 public class AQuietPlaceClient implements ClientModInitializer {
     @Override
@@ -17,6 +18,7 @@ public class AQuietPlaceClient implements ClientModInitializer {
 
         ClientNoiseNetworking.registerReceivers();
         NoiseHudOverlay.register();
+        ClientNoisemakerNetworking.register();
 
         BlockRenderLayerMap.INSTANCE.putBlock(
                 ModBlocks.NEWSPAPER_SOUNDPROOFING,

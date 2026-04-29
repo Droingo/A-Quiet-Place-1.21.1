@@ -1,0 +1,43 @@
+{
+  "variants": {
+    "active=false,armed=false,blink=false,facing=north": { "model": "aquietplace:block/noisemaker" },
+    "active=false,armed=false,blink=false,facing=south": { "model": "aquietplace:block/noisemaker", "y": 180 },
+    "active=false,armed=false,blink=false,facing=east": { "model": "aquietplace:block/noisemaker", "y": 90 },
+    "active=false,armed=false,blink=false,facing=west": { "model": "aquietplace:block/noisemaker", "y": 270 },
+
+    "active=false,armed=false,blink=true,facing=north": { "model": "aquietplace:block/noisemaker" },
+    "active=false,armed=false,blink=true,facing=south": { "model": "aquietplace:block/noisemaker", "y": 180 },
+    "active=false,armed=false,blink=true,facing=east": { "model": "aquietplace:block/noisemaker", "y": 90 },
+    "active=false,armed=false,blink=true,facing=west": { "model": "aquietplace:block/noisemaker", "y": 270 },
+
+    "active=false,armed=true,blink=false,facing=north": { "model": "aquietplace:block/noisemaker_armed" },
+    "active=false,armed=true,blink=false,facing=south": { "model": "aquietplace:block/noisemaker_armed", "y": 180 },
+    "active=false,armed=true,blink=false,facing=east": { "model": "aquietplace:block/noisemaker_armed", "y": 90 },
+    "active=false,armed=true,blink=false,facing=west": { "model": "aquietplace:block/noisemaker_armed", "y": 270 },
+
+    "active=false,armed=true,blink=true,facing=north": { "model": "aquietplace:block/noisemaker_armed" },
+    "active=false,armed=true,blink=true,facing=south": { "model": "aquietplace:block/noisemaker_armed", "y": 180 },
+    "active=false,armed=true,blink=true,facing=east": { "model": "aquietplace:block/noisemaker_armed", "y": 90 },
+    "active=false,armed=true,blink=true,facing=west": { "model": "aquietplace:block/noisemaker_armed", "y": 270 },
+
+    "active=true,armed=false,blink=false,facing=north": { "model": "aquietplace:block/noisemaker_active_0" },
+    "active=true,armed=false,blink=false,facing=south": { "model": "aquietplace:block/noisemaker_active_0", "y": 180 },
+    "active=true,armed=false,blink=false,facing=east": { "model": "aquietplace:block/noisemaker_active_0", "y": 90 },
+    "active=true,armed=false,blink=false,facing=west": { "model": "aquietplace:block/noisemaker_active_0", "y": 270 },
+
+    "active=true,armed=false,blink=true,facing=north": { "model": "aquietplace:block/noisemaker_active_1" },
+    "active=true,armed=false,blink=true,facing=south": { "model": "aquietplace:block/noisemaker_active_1", "y": 180 },
+    "active=true,armed=false,blink=true,facing=east": { "model": "aquietplace:block/noisemaker_active_1", "y": 90 },
+    "active=true,armed=false,blink=true,facing=west": { "model": "aquietplace:block/noisemaker_active_1", "y": 270 },
+
+    "active=true,armed=true,blink=false,facing=north": { "model": "aquietplace:block/noisemaker_active_0" },
+    "active=true,armed=true,blink=false,facing=south": { "model": "aquietplace:block/noisemaker_active_0", "y": 180 },
+    "active=true,armed=true,blink=false,facing=east": { "model": "aquietplace:block/noisemaker_active_0", "y": 90 },
+    "active=true,armed=true,blink=false,facing=west": { "model": "aquietplace:block/noisemaker_active_0", "y": 270 },
+
+    "active=true,armed=true,blink=true,facing=north": { "model": "aquietplace:block/noisemaker_active_1" },
+    "active=true,armed=true,blink=true,facing=south": { "model": "aquietplace:block/noisemaker_active_1", "y": 180 },
+    "active=true,armed=true,blink=true,facing=east": { "model": "aquietplace:block/noisemaker_active_1", "y": 90 },
+    "active=true,armed=true,blink=true,facing=west": { "model": "aquietplace:block/noisemaker_active_1", "y": 270 }
+  }
+}

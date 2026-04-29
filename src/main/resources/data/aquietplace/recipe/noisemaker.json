@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "IRI",
+    "SNS",
+    "IRI"
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    },
+    "S": {
+      "item": "aquietplace:scrap_electronics"
+    },
+    "N": {
+      "item": "minecraft:note_block"
+    }
+  },
+  "result": {
+    "id": "aquietplace:noisemaker",
+    "count": 1
+  }
+}
