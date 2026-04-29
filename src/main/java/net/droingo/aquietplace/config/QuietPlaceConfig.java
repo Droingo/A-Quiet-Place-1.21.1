@@ -32,6 +32,7 @@ public class QuietPlaceConfig {
     public ActionNoise actionNoise = new ActionNoise();
     public DeathAngel deathAngel = new DeathAngel();
     public VoiceChatNoise voiceChatNoise = new VoiceChatNoise();
+    public Soundproofing soundproofing = new Soundproofing();
 
     public static QuietPlaceConfig get() {
         return INSTANCE;
@@ -109,6 +110,9 @@ public class QuietPlaceConfig {
 
         if (this.deathAngel == null) {
             this.deathAngel = new DeathAngel();
+        }
+        if (this.soundproofing == null) {
+            this.soundproofing = new Soundproofing();
         }
     }
 
@@ -192,6 +196,35 @@ public class QuietPlaceConfig {
         public float landingBaseStrength = 0.35f;
         public float landingStrengthPerAirTick = 0.035f;
         public float landingMaxStrength = 1.0f;
+    }
+    public static class Soundproofing {
+        public boolean enabled = true;
+
+        /*
+         * How far around a noise source to scan for newspaper panels.
+         * 3 means a 7x7x7 cube, but the scan exits early once max reduction is reached.
+         */
+        public int scanRadius = 3;
+
+        /*
+         * Radius reduction controls how far Death Angels can hear the sound.
+         */
+        public float radiusReductionPerPanel = 0.08f;
+        public float maxRadiusReduction = 0.75f;
+        public float minimumRadiusMultiplier = 0.25f;
+
+        /*
+         * Strength reduction affects HUD level/priority-style logic if strength is used.
+         */
+        public float strengthReductionPerPanel = 0.04f;
+        public float maxStrengthReduction = 0.50f;
+        public float minimumStrengthMultiplier = 0.50f;
+
+        /*
+         * Safety floors so soundproofing never turns every sound into true zero.
+         */
+        public float minimumFinalRadius = 0.75f;
+        public float minimumFinalStrength = 0.05f;
     }
 
     public static class InteractionNoise {

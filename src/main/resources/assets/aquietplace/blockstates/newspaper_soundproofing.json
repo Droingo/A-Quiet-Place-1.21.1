@@ -1,0 +1,40 @@
+{
+  "variants": {
+    "facing=up": [
+      { "model": "aquietplace:block/newspaper_soundproofing_0", "weight": 1 },
+      { "model": "aquietplace:block/newspaper_soundproofing_1", "weight": 1 },
+      { "model": "aquietplace:block/newspaper_soundproofing_2", "weight": 1 },
+      { "model": "aquietplace:block/newspaper_soundproofing_3", "weight": 1 }
+    ],
+    "facing=down": [
+      { "model": "aquietplace:block/newspaper_soundproofing_0", "x": 180, "weight": 1 },
+      { "model": "aquietplace:block/newspaper_soundproofing_1", "x": 180, "weight": 1 },
+      { "model": "aquietplace:block/newspaper_soundproofing_2", "x": 180, "weight": 1 },
+      { "model": "aquietplace:block/newspaper_soundproofing_3", "x": 180, "weight": 1 }
+    ],
+    "facing=north": [
+      { "model": "aquietplace:block/newspaper_soundproofing_0", "x": 90, "weight": 1 },
+      { "model": "aquietplace:block/newspaper_soundproofing_1", "x": 90, "weight": 1 },
+      { "model": "aquietplace:block/newspaper_soundproofing_2", "x": 90, "weight": 1 },
+      { "model": "aquietplace:block/newspaper_soundproofing_3", "x": 90, "weight": 1 }
+    ],
+    "facing=south": [
+      { "model": "aquietplace:block/newspaper_soundproofing_0", "x": 90, "y": 180, "weight": 1 },
+      { "model": "aquietplace:block/newspaper_soundproofing_1", "x": 90, "y": 180, "weight": 1 },
+      { "model": "aquietplace:block/newspaper_soundproofing_2", "x": 90, "y": 180, "weight": 1 },
+      { "model": "aquietplace:block/newspaper_soundproofing_3", "x": 90, "y": 180, "weight": 1 }
+    ],
+    "facing=east": [
+      { "model": "aquietplace:block/newspaper_soundproofing_0", "x": 90, "y": 90, "weight": 1 },
+      { "model": "aquietplace:block/newspaper_soundproofing_1", "x": 90, "y": 90, "weight": 1 },
+      { "model": "aquietplace:block/newspaper_soundproofing_2", "x": 90, "y": 90, "weight": 1 },
+      { "model": "aquietplace:block/newspaper_soundproofing_3", "x": 90, "y": 90, "weight": 1 }
+    ],
+    "facing=west": [
+      { "model": "aquietplace:block/newspaper_soundproofing_0", "x": 90, "y": 270, "weight": 1 },
+      { "model": "aquietplace:block/newspaper_soundproofing_1", "x": 90, "y": 270, "weight": 1 },
+      { "model": "aquietplace:block/newspaper_soundproofing_2", "x": 90, "y": 270, "weight": 1 },
+      { "model": "aquietplace:block/newspaper_soundproofing_3", "x": 90, "y": 270, "weight": 1 }
+    ]
+  }
+}

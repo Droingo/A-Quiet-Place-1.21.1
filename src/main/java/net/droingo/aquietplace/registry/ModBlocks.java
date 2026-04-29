@@ -1,0 +1,54 @@
+package net.droingo.aquietplace.registry;
+
+import net.droingo.aquietplace.AQuietPlace;
+import net.droingo.aquietplace.block.NewspaperSoundproofingBlock;
+import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
+import net.minecraft.block.AbstractBlock;
+import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemGroups;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
+import net.minecraft.sound.BlockSoundGroup;
+import net.minecraft.util.Identifier;
+
+public final class ModBlocks {
+    public static final Block NEWSPAPER_SOUNDPROOFING = registerBlockWithItem(
+            "newspaper_soundproofing",
+            new NewspaperSoundproofingBlock(AbstractBlock.Settings.copy(Blocks.WHITE_WOOL)
+                    .sounds(BlockSoundGroup.WOOL)
+                    .nonOpaque()
+                    .noCollision()
+                    .strength(0.2f)
+            )
+    );
+
+    private ModBlocks() {
+    }
+
+    public static void register() {
+        ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries ->
+                entries.add(NEWSPAPER_SOUNDPROOFING)
+        );
+
+        AQuietPlace.LOGGER.info("Registered blocks for {}", AQuietPlace.MOD_ID);
+    }
+
+    private static Block registerBlockWithItem(String name, Block block) {
+        Registry.register(
+                Registries.BLOCK,
+                Identifier.of(AQuietPlace.MOD_ID, name),
+                block
+        );
+
+        Registry.register(
+                Registries.ITEM,
+                Identifier.of(AQuietPlace.MOD_ID, name),
+                new BlockItem(block, new Item.Settings())
+        );
+
+        return block;
+    }
+}

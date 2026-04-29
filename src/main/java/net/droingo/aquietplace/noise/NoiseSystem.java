@@ -32,6 +32,7 @@ public final class NoiseSystem {
     }
 
     public static void emitNoise(NoiseEvent noiseEvent) {
+        noiseEvent = SoundproofingSystem.applySoundproofing(noiseEvent);
         RECENT_NOISES.add(noiseEvent);
 
         if (debugLoggingEnabled) {

@@ -6,6 +6,9 @@ import net.droingo.aquietplace.client.render.entity.DeathAngelRenderer;
 import net.droingo.aquietplace.registry.ModEntities;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
+import net.droingo.aquietplace.registry.ModBlocks;
+import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
+import net.minecraft.client.render.RenderLayer;
 
 public class AQuietPlaceClient implements ClientModInitializer {
     @Override
@@ -14,5 +17,12 @@ public class AQuietPlaceClient implements ClientModInitializer {
 
         ClientNoiseNetworking.registerReceivers();
         NoiseHudOverlay.register();
+
+        BlockRenderLayerMap.INSTANCE.putBlock(
+                ModBlocks.NEWSPAPER_SOUNDPROOFING,
+                RenderLayer.getCutout()
+        );
+
     }
+
 }
