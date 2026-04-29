@@ -4,6 +4,7 @@
   "block.aquietplace.noisemaker": "Noisemaker",
   "block.aquietplace.newspaper_soundproofing": "Newspaper Soundproofing",
   "item.aquietplace.scrap_electronics": "Scrap Electronics",
+  "item.aquietplace.sound_meter": "Sound Meter",
 
   "subtitles.aquietplace.glass_bottle_trap_trigger_0": "Bottles rattle",
   "subtitles.aquietplace.glass_bottle_trap_trigger_1": "Bottles crash",
@@ -27,5 +28,6 @@
   "tooltip.aquietplace.glass_bottle_trap.noise_radius": "Bottle crash noise radius: %s blocks.",
   "tooltip.aquietplace.glass_bottle_trap.attracts_death_angels": "Attracts Death Angels.",
 
-  "block.aquietplace.glass_bottle_trap": "Glass Bottle Trap"
+  "block.aquietplace.glass_bottle_trap": "Glass Bottle Trap",
+  "block.aquietplace.waterfall_noise_block": "Waterfall Noise Block"
 }

@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "aquietplace:block/waterfall_noise_block"
+    }
+  }
+}

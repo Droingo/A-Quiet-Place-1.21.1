@@ -1,6 +1,7 @@
 package net.droingo.aquietplace.registry;
 
 import net.droingo.aquietplace.AQuietPlace;
+import net.droingo.aquietplace.item.SoundMeterItem;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroups;
@@ -26,24 +27,35 @@ public final class ModItems {
             new Item(new Item.Settings())
     );
 
+    public static final Item SOUND_METER = registerItem(
+            "sound_meter",
+            new SoundMeterItem(new Item.Settings().maxCount(1))
+    );
+
+    private ModItems() {
+    }
+
+    public static void register() {
+        ItemGroupEvents.modifyEntriesEvent(ItemGroups.SPAWN_EGGS).register(entries ->
+                entries.add(DEATH_ANGEL_SPAWN_EGG)
+        );
+
+        ItemGroupEvents.modifyEntriesEvent(ItemGroups.INGREDIENTS).register(entries ->
+                entries.add(SCRAP_ELECTRONICS)
+        );
+
+        ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries ->
+                entries.add(SOUND_METER)
+        );
+
+        AQuietPlace.LOGGER.info("Registered items for {}", AQuietPlace.MOD_ID);
+    }
+
     private static Item registerItem(String name, Item item) {
         return Registry.register(
                 Registries.ITEM,
                 Identifier.of(AQuietPlace.MOD_ID, name),
                 item
         );
-    }
-
-    private ModItems() {
-    }
-
-    public static void register() {
-        ItemGroupEvents.modifyEntriesEvent(ItemGroups.SPAWN_EGGS).register(entries -> entries.add(DEATH_ANGEL_SPAWN_EGG));
-
-        ItemGroupEvents.modifyEntriesEvent(ItemGroups.INGREDIENTS).register(entries ->
-                entries.add(SCRAP_ELECTRONICS)
-        );
-
-        AQuietPlace.LOGGER.info("Registered items for {}", AQuietPlace.MOD_ID);
     }
 }

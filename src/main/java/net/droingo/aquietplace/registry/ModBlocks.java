@@ -6,6 +6,7 @@ import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.MapColor;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroups;
@@ -16,6 +17,7 @@ import net.minecraft.util.Identifier;
 import net.droingo.aquietplace.item.NoisemakerBlockItem;
 import net.droingo.aquietplace.block.NoisemakerBlock;
 import net.droingo.aquietplace.block.GlassBottleTrapBlock;
+import net.droingo.aquietplace.block.WaterfallNoiseBlock;
 
 public final class ModBlocks {
     public static final Block NEWSPAPER_SOUNDPROOFING = registerBlockWithItem(
@@ -34,6 +36,16 @@ public final class ModBlocks {
                     .strength(0.3f)
             )
     );
+    public static final Block WATERFALL_NOISE_BLOCK = registerBlockWithItem(
+            "waterfall_noise_block",
+            new WaterfallNoiseBlock(AbstractBlock.Settings.create()
+                    .mapColor(MapColor.CYAN)
+                    .nonOpaque()
+                    .noCollision()
+                    .strength(-1.0f, 3600000.0f)
+                    .dropsNothing()
+            )
+    );
     public static final Block NOISEMAKER = registerBlockWithItem(
             "noisemaker",
             new NoisemakerBlock(AbstractBlock.Settings.copy(Blocks.IRON_BLOCK)
@@ -50,6 +62,7 @@ public final class ModBlocks {
             entries.add(NEWSPAPER_SOUNDPROOFING);
             entries.add(NOISEMAKER);
             entries.add(GLASS_BOTTLE_TRAP);
+            entries.add(WATERFALL_NOISE_BLOCK);
         });
 
         AQuietPlace.LOGGER.info("Registered blocks for {}", AQuietPlace.MOD_ID);

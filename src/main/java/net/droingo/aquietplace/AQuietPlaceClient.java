@@ -15,6 +15,8 @@ import net.droingo.aquietplace.client.hud.ClientItemTooltips;
 import net.droingo.aquietplace.client.render.block.GlassBottleTrapRenderer;
 import net.droingo.aquietplace.registry.ModBlockEntities;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
+import net.droingo.aquietplace.client.hud.SoundMeterHudOverlay;
+import net.droingo.aquietplace.client.network.ClientSoundMeterNetworking;
 
 public class AQuietPlaceClient implements ClientModInitializer {
     @Override
@@ -26,6 +28,8 @@ public class AQuietPlaceClient implements ClientModInitializer {
         ClientNoisemakerNetworking.register();
         ClientItemTooltips.register();
         ClientGlassBottleTrapDisarmNetworking.registerReceivers();
+        ClientSoundMeterNetworking.registerReceivers();
+        SoundMeterHudOverlay.register();
 
         BlockRenderLayerMap.INSTANCE.putBlock(
                 ModBlocks.NEWSPAPER_SOUNDPROOFING,

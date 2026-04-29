@@ -24,6 +24,10 @@ public final class NoiseHudOverlay {
             return;
         }
 
+        if (ClientSoundMeterData.shouldRender()) {
+            return;
+        }
+
         float noiseLevel = ClientNoiseData.getNoiseLevel();
 
         int x = 10;

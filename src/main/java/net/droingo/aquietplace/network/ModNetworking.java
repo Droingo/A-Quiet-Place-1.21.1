@@ -29,6 +29,10 @@ public final class ModNetworking {
                 GlassBottleTrapDisarmReadyPayload.ID,
                 GlassBottleTrapDisarmReadyPayload.CODEC
         );
+        PayloadTypeRegistry.playS2C().register(
+                SoundMeterScanPayload.ID,
+                SoundMeterScanPayload.CODEC
+        );
 
         ServerPlayNetworking.registerGlobalReceiver(NoisemakerSaveSettingsPayload.ID, (payload, context) ->
                 context.server().execute(() -> {
