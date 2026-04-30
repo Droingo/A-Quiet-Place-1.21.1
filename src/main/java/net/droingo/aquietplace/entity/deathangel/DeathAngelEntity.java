@@ -29,7 +29,6 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 import com.nyfaria.awcapi.entity.ClimberComponent;
-import com.nyfaria.awcapi.entity.IAdvancedClimber;
 import com.nyfaria.awcapi.ClimberHelper;
 import net.minecraft.entity.MovementType;
 import com.nyfaria.awcapi.entity.movement.ClimberPathNavigator;
@@ -43,7 +42,7 @@ import net.minecraft.sound.SoundEvent;
 
 import java.util.UUID;
 
-public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvancedClimber {
+public class DeathAngelEntity extends HostileEntity implements GeoEntity, DeathAngelAwcCompatibilityBridge {
     private static final TrackedData<Boolean> HEAR_REACTION_ACTIVE = DataTracker.registerData(
             DeathAngelEntity.class,
             TrackedDataHandlerRegistry.BOOLEAN
@@ -102,6 +101,7 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
     private int lastKnownSearchTicks;
 
     private int ledgeHopCooldownTicks;
+    private int stuckMovementTicks;
     private Vec3d lastLedgeHopPosition;
 
     public DeathAngelEntity(EntityType<? extends DeathAngelEntity> entityType, World world) {
@@ -203,17 +203,17 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
         }
 
         if (!this.hasNoisyTargetMemory()) {
-            this.lastLedgeHopPosition = this.getPos();
+            resetLedgeHopTracking();
             return;
         }
 
         if (this.isPlayingHearReaction() || this.isAttackAnimationActive() || this.isRunAttackAnimationActive()) {
-            this.lastLedgeHopPosition = this.getPos();
+            resetLedgeHopTracking();
             return;
         }
 
         if (this.getNavigation().isIdle()) {
-            this.lastLedgeHopPosition = this.getPos();
+            resetLedgeHopTracking();
             return;
         }
 
@@ -230,29 +230,42 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
         }
 
         double horizontalMovedSquared = getHorizontalDistanceSquared(this.lastLedgeHopPosition, currentPosition);
-        boolean barelyMoved = horizontalMovedSquared < 0.015 * 0.015;
 
         /*
-         * This is intentionally conservative:
-         * only help when it is hunting, trying to path, and barely moving.
-         * That usually means it is stuck on a wall/ground transition or ledge lip.
+         * Only count as stuck when it is almost completely failing to move.
+         * This avoids firing the helper during normal step-up/step-down movement.
          */
+        boolean barelyMoved = horizontalMovedSquared < 0.01 * 0.01;
+
         if (!barelyMoved) {
+            this.stuckMovementTicks = 0;
             this.lastLedgeHopPosition = currentPosition;
             return;
         }
 
-        Vec3d forward = Vec3d.fromPolar(0.0f, this.getYaw()).normalize();
+        this.stuckMovementTicks++;
+
+        /*
+         * Wait about half a second before helping.
+         * This prevents the helper from fighting normal pathfinding on uneven terrain.
+         */
+        if (this.stuckMovementTicks < 10) {
+            this.lastLedgeHopPosition = currentPosition;
+            return;
+        }
+
+        Vec3d forward = getLedgeHopDirection();
 
         this.setVelocity(
-                this.getVelocity().x + forward.x * 0.18,
-                0.34,
-                this.getVelocity().z + forward.z * 0.18
+                this.getVelocity().x + forward.x * 0.12,
+                0.26,
+                this.getVelocity().z + forward.z * 0.12
         );
 
         this.velocityDirty = true;
         this.fallDistance = 0.0f;
-        this.ledgeHopCooldownTicks = 16;
+        this.ledgeHopCooldownTicks = 24;
+        this.stuckMovementTicks = 0;
         this.lastLedgeHopPosition = currentPosition;
     }
 
@@ -260,6 +273,25 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
         double deltaX = second.x - first.x;
         double deltaZ = second.z - first.z;
         return deltaX * deltaX + deltaZ * deltaZ;
+    }
+
+    private void resetLedgeHopTracking() {
+        this.stuckMovementTicks = 0;
+        this.lastLedgeHopPosition = this.getPos();
+    }
+
+    private Vec3d getLedgeHopDirection() {
+        BlockPos navigationTarget = this.getNavigation().getTargetPos();
+
+        if (navigationTarget != null) {
+            Vec3d directionToTarget = navigationTarget.toCenterPos().subtract(this.getPos());
+
+            if (directionToTarget.horizontalLengthSquared() > 0.001) {
+                return new Vec3d(directionToTarget.x, 0.0, directionToTarget.z).normalize();
+            }
+        }
+
+        return Vec3d.fromPolar(0.0f, this.getYaw()).normalize();
     }
 
 
@@ -448,10 +480,6 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
         return navigator;
     }
 
-    @Override
-    public float getMovementSpeed() {
-        return (float) this.getAttributeValue(EntityAttributes.GENERIC_MOVEMENT_SPEED);
-    }
 
     @Override
     public boolean canClimbOnBlock(BlockState state, BlockPos pos) {
@@ -463,19 +491,33 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
         return this.climberComponent;
     }
 
-    @Override
-    public BlockPos getBlockPos() {
-        return super.getBlockPos();
-    }
 
-    @Override
-    public float getBlockSlipperiness(BlockPos pos) {
-        return this.getWorld().getBlockState(pos).getBlock().getSlipperiness();
-    }
 
     @Override
     public HostileEntity asMob() {
         return this;
+    }
+
+
+    public float getAwcMovementSpeedValue() {
+        return (float) this.getAttributeValue(EntityAttributes.GENERIC_MOVEMENT_SPEED);
+    }
+
+
+    @Override
+    public void travel(Vec3d movementInput) {
+        if (ClimberHelper.handleTravel(this, movementInput)) {
+            return;
+        }
+
+        super.travel(movementInput);
+        ClimberHelper.postTravel(this, movementInput);
+    }
+
+
+    @Override
+    public float getBlockSlipperiness(BlockPos pos) {
+        return this.getWorld().getBlockState(pos).getBlock().getSlipperiness();
     }
 
     @Override
@@ -501,17 +543,7 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, IAdvan
 
     @Override
     public void setLerpHeadSteps(int steps) {
-        // Not needed for our first test.
-    }
-
-    @Override
-    public void travel(Vec3d movementInput) {
-        if (ClimberHelper.handleTravel(this, movementInput)) {
-            return;
-        }
-
-        super.travel(movementInput);
-        ClimberHelper.postTravel(this, movementInput);
+        // Not needed for the Death Angel.
     }
 
     @Override
