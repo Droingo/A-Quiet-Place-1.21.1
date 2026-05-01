@@ -6,6 +6,15 @@ import net.droingo.aquietplace.block.entity.NoisemakerBlockEntity;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.droingo.aquietplace.block.entity.GlassBottleTrapBlockEntity;
+import net.droingo.aquietplace.signal.SignalType;
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.text.Text;
+import net.droingo.aquietplace.entity.signal.PlayerSignalEntity;
+import net.droingo.aquietplace.registry.ModEntities;
+import net.droingo.aquietplace.signal.SignalType;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 
 public final class ModNetworking {
     private ModNetworking() {
@@ -19,6 +28,11 @@ public final class ModNetworking {
         PayloadTypeRegistry.playS2C().register(
                 GlassBottleTrapOpenDisarmPayload.ID,
                 GlassBottleTrapOpenDisarmPayload.CODEC
+        );
+
+        PayloadTypeRegistry.playC2S().register(
+                SendPlayerSignalPayload.ID,
+                SendPlayerSignalPayload.CODEC
         );
 
         PayloadTypeRegistry.playC2S().register(
@@ -61,6 +75,31 @@ public final class ModNetworking {
         );
 
         ServerPlayNetworking.registerGlobalReceiver(
+                SendPlayerSignalPayload.ID,
+                (payload, context) -> context.server().execute(() -> {
+                    ServerPlayerEntity player = context.player();
+                    ServerWorld world = player.getServerWorld();
+                    SignalType signalType = SignalType.fromNetworkId(payload.signalTypeId());
+
+                    PlayerSignalEntity existingSignal = findExistingSignal(world, player);
+
+                    if (existingSignal != null) {
+                        existingSignal.refresh(player, signalType);
+                        return;
+                    }
+
+                    PlayerSignalEntity signalEntity = PlayerSignalEntity.create(
+                            ModEntities.PLAYER_SIGNAL,
+                            world,
+                            player,
+                            signalType
+                    );
+
+                    world.spawnEntity(signalEntity);
+                })
+        );
+
+        ServerPlayNetworking.registerGlobalReceiver(
                 GlassBottleTrapDisarmClickPayload.ID,
                 (payload, context) -> context.server().execute(() -> {
                     if (context.player().getWorld().getBlockEntity(payload.pos()) instanceof GlassBottleTrapBlockEntity trap) {
@@ -71,5 +110,13 @@ public final class ModNetworking {
 
 
         AQuietPlace.LOGGER.info("Registered networking payloads for {}", AQuietPlace.MOD_ID);
+    }
+
+    private static PlayerSignalEntity findExistingSignal(ServerWorld world, ServerPlayerEntity player) {
+        return world.getEntitiesByClass(
+                PlayerSignalEntity.class,
+                player.getBoundingBox().expand(4.0),
+                signalEntity -> player.getUuid().equals(signalEntity.getOwnerUuid())
+        ).stream().findFirst().orElse(null);
     }
 }

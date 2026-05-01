@@ -17,11 +17,16 @@ import net.droingo.aquietplace.registry.ModBlockEntities;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
 import net.droingo.aquietplace.client.hud.SoundMeterHudOverlay;
 import net.droingo.aquietplace.client.network.ClientSoundMeterNetworking;
+import net.droingo.aquietplace.client.keybind.ModKeybinds;
+import net.droingo.aquietplace.client.render.entity.PlayerSignalEntityRenderer;
+import net.droingo.aquietplace.registry.ModEntities;
+import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 
 public class AQuietPlaceClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         EntityRendererRegistry.register(ModEntities.DEATH_ANGEL, DeathAngelRenderer::new);
+        EntityRendererRegistry.register(ModEntities.PLAYER_SIGNAL, PlayerSignalEntityRenderer::new);
 
         ClientNoiseNetworking.registerReceivers();
         NoiseHudOverlay.register();
@@ -30,6 +35,7 @@ public class AQuietPlaceClient implements ClientModInitializer {
         ClientGlassBottleTrapDisarmNetworking.registerReceivers();
         ClientSoundMeterNetworking.registerReceivers();
         SoundMeterHudOverlay.register();
+        ModKeybinds.register();
 
         BlockRenderLayerMap.INSTANCE.putBlock(
                 ModBlocks.NEWSPAPER_SOUNDPROOFING,

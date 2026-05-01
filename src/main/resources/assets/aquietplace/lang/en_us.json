@@ -14,6 +14,10 @@
   "subtitles.aquietplace.noisemaker_beep": "Noisemaker beeps",
   "subtitles.aquietplace.noisemaker_noise": "Noisemaker emits static",
 
+  "screen.aquietplace.signal_radial": "Signal Menu",
+  "screen.aquietplace.signal_radial.title": "Signals",
+  "screen.aquietplace.signal_radial.hint": "Click a signal",
+
 
   "tooltip.aquietplace.noisemaker.one_time_use": "One-time use.",
   "tooltip.aquietplace.noisemaker.use_cautiously": "Use cautiously.",
@@ -40,5 +44,17 @@
 
   "block.aquietplace.glass_bottle_trap": "Glass Bottle Trap",
   "block.aquietplace.sand_path_layer": "Sand Path Layer",
-  "block.aquietplace.waterfall_noise_block": "Waterfall Noise Block"
+  "block.aquietplace.waterfall_noise_block": "Waterfall Noise Block",
+
+  "key.category.aquietplace": "A Quiet Place",
+  "key.aquietplace.signal_menu": "Signal Menu",
+
+  "signal.aquietplace.good": "Good",
+  "signal.aquietplace.bad": "Bad",
+  "signal.aquietplace.freeze": "Freeze",
+  "signal.aquietplace.danger": "Danger",
+  "signal.aquietplace.shaka": "Shaka",
+  "signal.aquietplace.loot": "Loot",
+  "signal.aquietplace.help": "Help",
+  "signal.aquietplace.move": "Move"
 }

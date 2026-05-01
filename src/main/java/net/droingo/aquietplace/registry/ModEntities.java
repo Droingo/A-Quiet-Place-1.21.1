@@ -8,6 +8,8 @@ import net.minecraft.entity.SpawnGroup;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
+import net.droingo.aquietplace.entity.signal.PlayerSignalEntity;
+import net.minecraft.entity.SpawnGroup;
 
 public final class ModEntities {
     public static final EntityType<DeathAngelEntity> DEATH_ANGEL = Registry.register(
@@ -21,6 +23,16 @@ public final class ModEntities {
                     .build("death_angel")
     );
 
+    public static final EntityType<PlayerSignalEntity> PLAYER_SIGNAL = Registry.register(
+            Registries.ENTITY_TYPE,
+            Identifier.of(AQuietPlace.MOD_ID, "player_signal"),
+            EntityType.Builder.<PlayerSignalEntity>create(PlayerSignalEntity::new, SpawnGroup.MISC)
+                    .dimensions(0.1f, 0.1f)
+                    .maxTrackingRange(64)
+                    .trackingTickInterval(1)
+                    .build()
+    );
+
     private ModEntities() {
     }
 
@@ -29,4 +41,6 @@ public final class ModEntities {
 
         AQuietPlace.LOGGER.info("Registered entities for {}", AQuietPlace.MOD_ID);
     }
+
+
 }
