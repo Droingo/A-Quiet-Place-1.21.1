@@ -117,45 +117,42 @@ public final class PlayerNoiseHandler {
         }
 
         if (player.isSneaking()) {
-            emitPlayerNoise(
+            emitMovementNoise(
                     player,
                     NoiseType.PLAYER_SNEAK,
                     config.sneakStrength,
                     config.sneakRadius,
-                    true,
-                    true
+                    config.sneakHudLevel,
+                    state
             );
 
-            setHudNoiseLevel(state, config.sneakHudLevel);
             state.movementNoiseCooldownTicks = config.sneakIntervalTicks;
             return;
         }
 
         if (player.isSprinting()) {
-            emitPlayerNoise(
+            emitMovementNoise(
                     player,
                     NoiseType.PLAYER_SPRINT,
                     config.sprintStrength,
                     config.sprintRadius,
-                    true,
-                    true
+                    config.sprintHudLevel,
+                    state
             );
 
-            setHudNoiseLevel(state, config.sprintHudLevel);
             state.movementNoiseCooldownTicks = config.sprintIntervalTicks;
             return;
         }
 
-        emitPlayerNoise(
+        emitMovementNoise(
                 player,
                 NoiseType.PLAYER_WALK,
                 config.walkStrength,
                 config.walkRadius,
-                true,
-                true
+                config.walkHudLevel,
+                state
         );
 
-        setHudNoiseLevel(state, config.walkHudLevel);
         state.movementNoiseCooldownTicks = config.walkIntervalTicks;
     }
 
@@ -176,16 +173,18 @@ public final class PlayerNoiseHandler {
             return;
         }
 
+        float softSurfaceMultiplier = getSoftSurfaceMultiplier(player);
+
         emitPlayerNoise(
                 player,
                 NoiseType.PLAYER_JUMP,
-                config.jumpStrength,
-                config.jumpRadius,
+                config.jumpStrength * softSurfaceMultiplier,
+                config.jumpRadius * softSurfaceMultiplier,
                 true,
                 true
         );
 
-        setHudNoiseLevel(state, config.jumpHudLevel);
+        setHudNoiseLevel(state, config.jumpHudLevel * softSurfaceMultiplier);
     }
 
     private static void handleLandingNoise(
@@ -215,16 +214,18 @@ public final class PlayerNoiseHandler {
                 config.landingBaseStrength + state.airTicks * config.landingStrengthPerAirTick
         );
 
+        float softSurfaceMultiplier = getSoftSurfaceMultiplier(player);
+
         emitPlayerNoise(
                 player,
                 NoiseType.PLAYER_LAND,
-                strength,
-                radius,
+                strength * softSurfaceMultiplier,
+                radius * softSurfaceMultiplier,
                 true,
                 true
         );
 
-        setHudNoiseLevel(state, strength);
+        setHudNoiseLevel(state, strength * softSurfaceMultiplier);
     }
 
     public static void addHudNoise(ServerPlayerEntity player, float noiseLevel) {
@@ -241,6 +242,35 @@ public final class PlayerNoiseHandler {
 
         state.currentNoiseLevel = Math.max(state.currentNoiseLevel, noiseLevel);
         state.noiseHoldTicks = hudConfig.noiseHoldTicks;
+    }
+
+    private static void emitMovementNoise(
+            ServerPlayerEntity player,
+            NoiseType noiseType,
+            float strength,
+            float radius,
+            float hudLevel,
+            PlayerNoiseState state
+    ) {
+        float softSurfaceMultiplier = getSoftSurfaceMultiplier(player);
+
+        emitPlayerNoise(
+                player,
+                noiseType,
+                strength * softSurfaceMultiplier,
+                radius * softSurfaceMultiplier,
+                true,
+                true
+        );
+
+        setHudNoiseLevel(state, hudLevel * softSurfaceMultiplier);
+    }
+
+    private static float getSoftSurfaceMultiplier(ServerPlayerEntity player) {
+        return SoftSurfaceSystem.getFootstepNoiseMultiplier(
+                player.getServerWorld(),
+                player.getBlockPos()
+        );
     }
 
     private static void emitPlayerNoise(

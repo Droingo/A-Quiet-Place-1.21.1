@@ -5,6 +5,8 @@
   "block.aquietplace.newspaper_soundproofing": "Newspaper Soundproofing",
   "item.aquietplace.scrap_electronics": "Scrap Electronics",
   "item.aquietplace.sound_meter": "Sound Meter",
+  "item.aquietplace.sand_bag": "Sand Bag",
+  "item.aquietplace.empty_sand_bag": "Empty Sand Bag",
 
   "subtitles.aquietplace.glass_bottle_trap_trigger_0": "Bottles rattle",
   "subtitles.aquietplace.glass_bottle_trap_trigger_1": "Bottles crash",
@@ -27,7 +29,16 @@
   "tooltip.aquietplace.glass_bottle_trap.trigger_radius": "Triggers living entities within %s blocks.",
   "tooltip.aquietplace.glass_bottle_trap.noise_radius": "Bottle crash noise radius: %s blocks.",
   "tooltip.aquietplace.glass_bottle_trap.attracts_death_angels": "Attracts Death Angels.",
+  "tooltip.aquietplace.empty_sand_bag.fill": "Right-click sand or red sand to fill.",
+  "tooltip.aquietplace.empty_sand_bag.uses": "A filled bag contains 8 uses.",
+  "tooltip.aquietplace.empty_sand_bag.quiet_paths": "Filled bags place quiet sand path layers.",
+
+  "tooltip.aquietplace.sound_meter.toggle": "Right-click to toggle the meter on or off.",
+  "tooltip.aquietplace.sound_meter.compare": "Shows your noise compared to ambient noise.",
+  "tooltip.aquietplace.sound_meter.ambient": "High ambient noise can help mask movement.",
+  "tooltip.aquietplace.sound_meter.hold": "Hold it while enabled to keep scanning.",
 
   "block.aquietplace.glass_bottle_trap": "Glass Bottle Trap",
+  "block.aquietplace.sand_path_layer": "Sand Path Layer",
   "block.aquietplace.waterfall_noise_block": "Waterfall Noise Block"
 }

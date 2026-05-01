@@ -1,0 +1,23 @@
+{
+  "parent": "aquietplace:item/sand_bag_full",
+  "overrides": [
+    {
+      "predicate": {
+        "damage": 0.375
+      },
+      "model": "aquietplace:item/sand_bag_half"
+    },
+    {
+      "predicate": {
+        "damage": 0.75
+      },
+      "model": "aquietplace:item/sand_bag_low"
+    },
+    {
+      "predicate": {
+        "damage": 1.0
+      },
+      "model": "aquietplace:item/sand_bag_empty"
+    }
+  ]
+}

@@ -7,6 +7,7 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.droingo.aquietplace.registry.ModItems;
 
 public final class ClientItemTooltips {
     private ClientItemTooltips() {
@@ -26,9 +27,58 @@ public final class ClientItemTooltips {
 
             if (stack.isOf(ModBlocks.GLASS_BOTTLE_TRAP.asItem())) {
                 addGlassBottleTrapTooltip(lines);
+                return;
+            }
+
+            if (stack.isOf(ModItems.EMPTY_SAND_BAG)) {
+                addEmptySandBagTooltip(lines);
+                return;
+            }
+
+            if (stack.isOf(ModItems.SOUND_METER)) {
+                addSoundMeterTooltip(lines);
             }
         });
     }
+
+    private static void addEmptySandBagTooltip(java.util.List<Text> lines) {
+        if (!Screen.hasControlDown()) {
+            lines.add(Text.translatable("tooltip.aquietplace.hold_ctrl")
+                    .formatted(Formatting.DARK_GRAY));
+            return;
+        }
+
+        lines.add(Text.translatable("tooltip.aquietplace.empty_sand_bag.fill")
+                .formatted(Formatting.GRAY));
+
+        lines.add(Text.translatable("tooltip.aquietplace.empty_sand_bag.uses")
+                .formatted(Formatting.GRAY));
+
+        lines.add(Text.translatable("tooltip.aquietplace.empty_sand_bag.quiet_paths")
+                .formatted(Formatting.YELLOW));
+    }
+
+    private static void addSoundMeterTooltip(java.util.List<Text> lines) {
+        if (!Screen.hasControlDown()) {
+            lines.add(Text.translatable("tooltip.aquietplace.hold_ctrl")
+                    .formatted(Formatting.DARK_GRAY));
+            return;
+        }
+
+        lines.add(Text.translatable("tooltip.aquietplace.sound_meter.toggle")
+                .formatted(Formatting.GRAY));
+
+        lines.add(Text.translatable("tooltip.aquietplace.sound_meter.compare")
+                .formatted(Formatting.GRAY));
+
+        lines.add(Text.translatable("tooltip.aquietplace.sound_meter.ambient")
+                .formatted(Formatting.AQUA));
+
+        lines.add(Text.translatable("tooltip.aquietplace.sound_meter.hold")
+                .formatted(Formatting.YELLOW));
+    }
+
+
     private static void addGlassBottleTrapTooltip(java.util.List<Text> lines) {
         if (!Screen.hasControlDown()) {
             lines.add(Text.translatable("tooltip.aquietplace.hold_ctrl")

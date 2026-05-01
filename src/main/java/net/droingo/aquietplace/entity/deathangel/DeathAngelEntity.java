@@ -39,6 +39,10 @@ import net.droingo.aquietplace.registry.ModSounds;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
+import net.minecraft.block.Block;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.block.Blocks;
+import net.minecraft.registry.tag.BlockTags;
 
 import java.util.UUID;
 
@@ -104,6 +108,14 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, DeathA
     private int stuckMovementTicks;
     private Vec3d lastLedgeHopPosition;
 
+    private int verticalChaseLeapCooldownTicks;
+    private int verticalChaseLeapChargeTicks;
+    private int leapFacingLockTicks;
+    private float leapLockedYaw;
+    private int movementAnimationGraceTicks;
+    private Vec3d lastAnimationMovementPosition;
+
+
     public DeathAngelEntity(EntityType<? extends DeathAngelEntity> entityType, World world) {
         super(entityType, world);
         ClimberHelper.initClimber(this);
@@ -165,10 +177,13 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, DeathA
             tickRecentHuntTarget();
             tickLastKnownSearchMemory();
             tickLedgeHopAssist();
+            tickVerticalChaseLeapAssist();
             tickIdleBreathing();
             tickIdleListening();
 
         }
+        tickMovementAnimationSmoothing();
+        tickLeapFacingLock();
 
         if (!this.getWorld().isClient() && this.age % 10 == 0 && this.getWorld() instanceof ServerWorld serverWorld) {
             serverWorld.spawnParticles(
@@ -183,6 +198,255 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, DeathA
                     0.005
             );
         }
+    }
+
+    private void tickVerticalChaseLeapAssist() {
+        if (this.verticalChaseLeapCooldownTicks > 0) {
+            this.verticalChaseLeapCooldownTicks--;
+        }
+
+        if (!this.hasNoisyTargetMemory()) {
+            resetVerticalChaseLeapTracking();
+            return;
+        }
+
+        if (this.isPlayingHearReaction() || this.isAttackAnimationActive() || this.isRunAttackAnimationActive()) {
+            resetVerticalChaseLeapTracking();
+            return;
+        }
+
+        if (this.verticalChaseLeapCooldownTicks > 0) {
+            return;
+        }
+
+        Entity target = this.getNoisyTargetEntity();
+
+        if (!this.canHuntEntity(target)) {
+            resetVerticalChaseLeapTracking();
+            return;
+        }
+
+        double horizontalDistanceSquared = getHorizontalDistanceSquared(this.getPos(), target.getPos());
+        double verticalDifference = target.getY() - this.getY();
+        double absoluteVerticalDifference = Math.abs(verticalDifference);
+
+        /*
+         * Only leap for real height problems.
+         * This avoids triggering on normal hills, stairs, slabs, and one-block terrain.
+         */
+        if (absoluteVerticalDifference < 3.5) {
+            resetVerticalChaseLeapTracking();
+            return;
+        }
+
+        /*
+         * Do not leap from absurd distances.
+         * We allow close horizontal leaps because the player may be directly above
+         * or below the Death Angel on a ledge/building.
+         */
+        if (horizontalDistanceSquared > 576.0) {
+            resetVerticalChaseLeapTracking();
+            return;
+        }
+
+        /*
+         * Give normal pathfinding a short chance first.
+         * If the height difference stays large for several ticks, leap.
+         */
+        this.verticalChaseLeapChargeTicks++;
+
+        if (this.verticalChaseLeapChargeTicks < 6) {
+            return;
+        }
+
+        leapTowardVerticalTarget(target, verticalDifference);
+
+        this.verticalChaseLeapCooldownTicks = 60;
+        this.verticalChaseLeapChargeTicks = 0;
+    }
+
+    private void resetVerticalChaseLeapTracking() {
+        this.verticalChaseLeapChargeTicks = 0;
+    }
+
+    private void leapTowardVerticalTarget(Entity target, double verticalDifference) {
+        Vec3d directionToTarget = target.getPos().subtract(this.getPos());
+        Vec3d flatDirection = new Vec3d(directionToTarget.x, 0.0, directionToTarget.z);
+
+        if (flatDirection.lengthSquared() < 0.001) {
+            return;
+        }
+
+        flatDirection = flatDirection.normalize();
+
+        breakSimpleBlocksForLeap(flatDirection);
+
+        /*
+         * Big chase leap.
+         * Horizontal strength should cover roughly several blocks.
+         * Vertical strength is higher when the target is above.
+         */
+        double horizontalStrength = 1.25;
+        double verticalStrength = verticalDifference > 0.0 ? 0.72 : 0.42;
+
+        this.setVelocity(
+                flatDirection.x * horizontalStrength,
+                verticalStrength,
+                flatDirection.z * horizontalStrength
+        );
+
+        this.velocityDirty = true;
+        this.fallDistance = 0.0f;
+
+        lockLeapFacing(flatDirection, 14);
+        this.getLookControl().lookAt(target, 70.0f, 70.0f);
+        this.suppressHearReaction(12);
+
+        /*
+         * Keep run/walk animation alive during the leap.
+         * Later this can trigger a real leap animation.
+         */
+        this.movementAnimationGraceTicks = Math.max(this.movementAnimationGraceTicks, 18);
+
+        if (this.getWorld() instanceof ServerWorld serverWorld) {
+            serverWorld.spawnParticles(
+                    ParticleTypes.SONIC_BOOM,
+                    this.getX(),
+                    this.getY() + 1.0,
+                    this.getZ(),
+                    1,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0
+            );
+
+            playDeathAngelSound(
+                    ModSounds.DEATH_ANGEL_INVESTIGATE_GROWL,
+                    1.0f,
+                    1.15f
+            );
+        }
+    }
+
+
+    private void breakSimpleBlocksForLeap(Vec3d flatDirection) {
+        if (!(this.getWorld() instanceof ServerWorld serverWorld)) {
+            return;
+        }
+
+        BlockPos basePos = this.getBlockPos();
+
+        for (int forward = 1; forward <= 2; forward++) {
+            int offsetX = (int) Math.round(flatDirection.x * forward);
+            int offsetZ = (int) Math.round(flatDirection.z * forward);
+
+            BlockPos center = basePos.add(offsetX, 0, offsetZ);
+
+            for (int y = 0; y <= 2; y++) {
+                tryBreakLeapBlock(serverWorld, center.up(y));
+            }
+        }
+    }
+
+    private void tryBreakLeapBlock(ServerWorld world, BlockPos pos) {
+        BlockState state = world.getBlockState(pos);
+
+        if (!canBreakDuringLeap(state, pos)) {
+            return;
+        }
+
+        world.breakBlock(pos, false, this);
+    }
+
+    private boolean canBreakDuringLeap(BlockState state, BlockPos pos) {
+        if (state.isAir()) {
+            return false;
+        }
+
+        if (state.hasBlockEntity()) {
+            return false;
+        }
+
+        if (state.getHardness(this.getWorld(), pos) < 0.0f) {
+            return false;
+        }
+
+        Block block = state.getBlock();
+
+        if (block == Blocks.CHEST || block == Blocks.BARREL || block == Blocks.SHULKER_BOX) {
+            return false;
+        }
+
+        return state.isIn(BlockTags.LEAVES)
+                || state.isIn(BlockTags.LOGS)
+                || state.isIn(BlockTags.PLANKS);
+    }
+
+    private void lockLeapFacing(Vec3d flatDirection, int ticks) {
+        if (flatDirection.lengthSquared() < 0.001) {
+            return;
+        }
+
+        float yaw = getYawFromFlatDirection(flatDirection);
+
+        this.leapLockedYaw = yaw;
+        this.leapFacingLockTicks = Math.max(this.leapFacingLockTicks, ticks);
+
+        applyLeapYaw(yaw);
+    }
+
+    private void tickLeapFacingLock() {
+        if (this.leapFacingLockTicks <= 0) {
+            return;
+        }
+
+        applyLeapYaw(this.leapLockedYaw);
+        this.leapFacingLockTicks--;
+    }
+
+    private float getYawFromFlatDirection(Vec3d flatDirection) {
+        return (float) (MathHelper.atan2(flatDirection.z, flatDirection.x) * 180.0F / Math.PI) - 90.0F;
+    }
+
+    private void applyLeapYaw(float yaw) {
+        this.setYaw(yaw);
+        this.bodyYaw = yaw;
+        this.headYaw = yaw;
+
+        this.prevYaw = yaw;
+        this.prevBodyYaw = yaw;
+        this.prevHeadYaw = yaw;
+    }
+
+
+
+
+
+
+    private void tickMovementAnimationSmoothing() {
+        Vec3d currentPosition = this.getPos();
+
+        if (this.lastAnimationMovementPosition == null) {
+            this.lastAnimationMovementPosition = currentPosition;
+            return;
+        }
+
+        double horizontalMovedSquared = getHorizontalDistanceSquared(this.lastAnimationMovementPosition, currentPosition);
+        boolean actuallyMoved = horizontalMovedSquared > 0.003 * 0.003;
+
+        if (actuallyMoved) {
+            this.movementAnimationGraceTicks = 8;
+        } else if (this.movementAnimationGraceTicks > 0) {
+            this.movementAnimationGraceTicks--;
+        }
+
+        this.lastAnimationMovementPosition = currentPosition;
+    }
+
+    private boolean shouldKeepMovementAnimationActive() {
+        return this.movementAnimationGraceTicks > 0
+                || this.getVelocity().horizontalLengthSquared() > 0.003 * 0.003;
     }
 
     private void tickHearReaction() {
@@ -835,8 +1099,10 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, DeathA
                 return state.setAndContinue(HEAR_LEFT_ANIMATION);
             }
 
-            if (state.isMoving()) {
-                if (this.isChasingNoisyTargetClientSynced()) {
+            boolean shouldPlayMovementAnimation = state.isMoving() || this.shouldKeepMovementAnimationActive();
+
+            if (shouldPlayMovementAnimation) {
+                if (this.isChasingNoisyTargetClientSynced() || this.hasNoisyTargetMemory()) {
                     return state.setAndContinue(RUN_ANIMATION);
                 }
 

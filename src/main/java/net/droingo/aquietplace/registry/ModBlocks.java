@@ -18,6 +18,7 @@ import net.droingo.aquietplace.item.NoisemakerBlockItem;
 import net.droingo.aquietplace.block.NoisemakerBlock;
 import net.droingo.aquietplace.block.GlassBottleTrapBlock;
 import net.droingo.aquietplace.block.WaterfallNoiseBlock;
+import net.droingo.aquietplace.block.SandPathLayerBlock;
 
 public final class ModBlocks {
     public static final Block NEWSPAPER_SOUNDPROOFING = registerBlockWithItem(
@@ -26,6 +27,13 @@ public final class ModBlocks {
                     .sounds(BlockSoundGroup.WOOL)
                     .nonOpaque()
                     .noCollision()
+                    .strength(0.2f)
+            )
+    );
+    public static final Block SAND_PATH_LAYER = registerBlockWithItem(
+            "sand_path_layer",
+            new SandPathLayerBlock(AbstractBlock.Settings.copy(Blocks.SAND)
+                    .nonOpaque()
                     .strength(0.2f)
             )
     );
@@ -63,6 +71,7 @@ public final class ModBlocks {
             entries.add(NOISEMAKER);
             entries.add(GLASS_BOTTLE_TRAP);
             entries.add(WATERFALL_NOISE_BLOCK);
+            entries.add(SAND_PATH_LAYER);
         });
 
         AQuietPlace.LOGGER.info("Registered blocks for {}", AQuietPlace.MOD_ID);

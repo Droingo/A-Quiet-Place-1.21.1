@@ -1,0 +1,21 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "minecraft:block/sand",
+    "sand": "minecraft:block/sand"
+  },
+  "elements": [
+    {
+      "from": [0, 0, 0],
+      "to": [16, 1, 16],
+      "faces": {
+        "down": { "texture": "#sand", "cullface": "down" },
+        "up": { "texture": "#sand" },
+        "north": { "texture": "#sand" },
+        "south": { "texture": "#sand" },
+        "west": { "texture": "#sand" },
+        "east": { "texture": "#sand" }
+      }
+    }
+  ]
+}
