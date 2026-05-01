@@ -42,29 +42,34 @@ public class PlayerSignalEntityRenderer extends EntityRenderer<PlayerSignalEntit
 
         float halfSize = 0.5f;
 
+        int colorRgb = entity.getColorRgb();
+        int red = (colorRgb >> 16) & 255;
+        int green = (colorRgb >> 8) & 255;
+        int blue = colorRgb & 255;
+
         vertices.vertex(matrix, -halfSize, -halfSize, 0.0f)
-                .color(255, 255, 255, 255)
+                .color(red, green, blue, 255)
                 .texture(0.0f, 1.0f)
                 .overlay(OverlayTexture.DEFAULT_UV)
                 .light(light)
                 .normal(matrices.peek(), 0.0f, 1.0f, 0.0f);
 
         vertices.vertex(matrix, halfSize, -halfSize, 0.0f)
-                .color(255, 255, 255, 255)
+                .color(red, green, blue, 255)
                 .texture(1.0f, 1.0f)
                 .overlay(OverlayTexture.DEFAULT_UV)
                 .light(light)
                 .normal(matrices.peek(), 0.0f, 1.0f, 0.0f);
 
         vertices.vertex(matrix, halfSize, halfSize, 0.0f)
-                .color(255, 255, 255, 255)
+                .color(red, green, blue, 255)
                 .texture(1.0f, 0.0f)
                 .overlay(OverlayTexture.DEFAULT_UV)
                 .light(light)
                 .normal(matrices.peek(), 0.0f, 1.0f, 0.0f);
 
         vertices.vertex(matrix, -halfSize, halfSize, 0.0f)
-                .color(255, 255, 255, 255)
+                .color(red, green, blue, 255)
                 .texture(0.0f, 0.0f)
                 .overlay(OverlayTexture.DEFAULT_UV)
                 .light(light)

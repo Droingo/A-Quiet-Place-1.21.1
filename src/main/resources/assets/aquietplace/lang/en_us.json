@@ -17,7 +17,7 @@
   "screen.aquietplace.signal_radial": "Signal Menu",
   "screen.aquietplace.signal_radial.title": "Signals",
   "screen.aquietplace.signal_radial.hint": "Click a signal",
-
+  "screen.aquietplace.signal_radial.skin_color": "Skin Color",
 
   "tooltip.aquietplace.noisemaker.one_time_use": "One-time use.",
   "tooltip.aquietplace.noisemaker.use_cautiously": "Use cautiously.",

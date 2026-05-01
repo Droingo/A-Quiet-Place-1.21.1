@@ -23,6 +23,11 @@ public class PlayerSignalEntity extends Entity {
             TrackedDataHandlerRegistry.INTEGER
     );
 
+    private static final TrackedData<Integer> SIGNAL_COLOR_RGB = DataTracker.registerData(
+            PlayerSignalEntity.class,
+            TrackedDataHandlerRegistry.INTEGER
+    );
+
     private static final int DEFAULT_DURATION_TICKS = 60;
 
     private UUID ownerUuid;
@@ -38,11 +43,13 @@ public class PlayerSignalEntity extends Entity {
             EntityType<? extends PlayerSignalEntity> entityType,
             ServerWorld world,
             Entity owner,
-            SignalType signalType
-    ) {
+            SignalType signalType,
+            int colorRgb
+    ){
         PlayerSignalEntity signalEntity = new PlayerSignalEntity(entityType, world);
         signalEntity.setOwner(owner);
         signalEntity.setSignalType(signalType);
+        signalEntity.setColorRgb(colorRgb);
         signalEntity.refreshPositionNearOwner(owner);
         return signalEntity;
     }
@@ -50,6 +57,7 @@ public class PlayerSignalEntity extends Entity {
     @Override
     protected void initDataTracker(DataTracker.Builder builder) {
         builder.add(SIGNAL_TYPE_ID, SignalType.MOVE.toNetworkId());
+        builder.add(SIGNAL_COLOR_RGB, 0xF1C27D);
     }
 
     @Override
@@ -78,9 +86,10 @@ public class PlayerSignalEntity extends Entity {
         this.setVelocity(Vec3d.ZERO);
     }
 
-    public void refresh(Entity owner, SignalType signalType) {
+    public void refresh(Entity owner, SignalType signalType, int colorRgb) {
         setOwner(owner);
         setSignalType(signalType);
+        setColorRgb(colorRgb);
         this.durationTicks = DEFAULT_DURATION_TICKS;
         refreshPositionNearOwner(owner);
     }
@@ -93,6 +102,14 @@ public class PlayerSignalEntity extends Entity {
                 owner.getYaw(),
                 0.0f
         );
+    }
+
+    public void setColorRgb(int colorRgb) {
+        this.dataTracker.set(SIGNAL_COLOR_RGB, colorRgb & 0xFFFFFF);
+    }
+
+    public int getColorRgb() {
+        return this.dataTracker.get(SIGNAL_COLOR_RGB) & 0xFFFFFF;
     }
 
     public void setOwner(Entity owner) {
@@ -125,6 +142,10 @@ public class PlayerSignalEntity extends Entity {
 
     @Override
     protected void readCustomDataFromNbt(NbtCompound nbt) {
+        if (nbt.contains("ColorRgb")) {
+            this.setColorRgb(nbt.getInt("ColorRgb"));
+        }
+
         if (nbt.contains("OwnerUuid")) {
             try {
                 this.ownerUuid = UUID.fromString(nbt.getString("OwnerUuid"));
@@ -150,6 +171,7 @@ public class PlayerSignalEntity extends Entity {
 
         nbt.putInt("DurationTicks", this.durationTicks);
         nbt.putInt("SignalType", this.getSignalType().toNetworkId());
+        nbt.putInt("ColorRgb", this.getColorRgb());
     }
 
     @Override

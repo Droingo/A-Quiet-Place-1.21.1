@@ -20,6 +20,7 @@ import net.droingo.aquietplace.client.network.ClientSoundMeterNetworking;
 import net.droingo.aquietplace.client.keybind.ModKeybinds;
 import net.droingo.aquietplace.client.render.entity.PlayerSignalEntityRenderer;
 import net.droingo.aquietplace.registry.ModEntities;
+import net.droingo.aquietplace.client.signal.ClientSignalColorSettings;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 
 public class AQuietPlaceClient implements ClientModInitializer {
@@ -36,6 +37,7 @@ public class AQuietPlaceClient implements ClientModInitializer {
         ClientSoundMeterNetworking.registerReceivers();
         SoundMeterHudOverlay.register();
         ModKeybinds.register();
+        ClientSignalColorSettings.load();
 
         BlockRenderLayerMap.INSTANCE.putBlock(
                 ModBlocks.NEWSPAPER_SOUNDPROOFING,

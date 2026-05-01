@@ -80,11 +80,12 @@ public final class ModNetworking {
                     ServerPlayerEntity player = context.player();
                     ServerWorld world = player.getServerWorld();
                     SignalType signalType = SignalType.fromNetworkId(payload.signalTypeId());
+                    int colorRgb = payload.colorRgb() & 0xFFFFFF;
 
                     PlayerSignalEntity existingSignal = findExistingSignal(world, player);
 
                     if (existingSignal != null) {
-                        existingSignal.refresh(player, signalType);
+                        existingSignal.refresh(player, signalType, colorRgb);
                         return;
                     }
 
@@ -92,9 +93,9 @@ public final class ModNetworking {
                             ModEntities.PLAYER_SIGNAL,
                             world,
                             player,
-                            signalType
+                            signalType,
+                            colorRgb
                     );
-
                     world.spawnEntity(signalEntity);
                 })
         );
