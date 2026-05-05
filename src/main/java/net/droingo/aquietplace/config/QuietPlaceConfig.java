@@ -35,6 +35,7 @@ public class QuietPlaceConfig {
     public Soundproofing soundproofing = new Soundproofing();
     public Noisemaker noisemaker = new Noisemaker();
     public GlassBottleTrap glassBottleTrap = new GlassBottleTrap();
+    public FeedbackEmitter feedbackEmitter = new FeedbackEmitter();
 
     public static QuietPlaceConfig get() {
         return INSTANCE;
@@ -85,6 +86,9 @@ public class QuietPlaceConfig {
     private void fillMissingSections() {
         if (this.debug == null) {
             this.debug = new Debug();
+        }
+        if (this.feedbackEmitter == null) {
+            this.feedbackEmitter = new FeedbackEmitter();
         }
         if (this.voiceChatNoise == null) {
             this.voiceChatNoise = new VoiceChatNoise();
@@ -324,6 +328,27 @@ public class QuietPlaceConfig {
         public float hardHardnessThreshold = 5.0f;
     }
 
+    public static class FeedbackEmitter {
+        public boolean enabled = true;
+
+        /*
+         * Personal handheld emergency stun.
+         */
+        public double stunRadius = 12.0;
+        public int stunDurationTicks = 20 * 5;
+
+        /*
+         * Using it is not silent. This should be dangerous after the stun window.
+         */
+        public float noiseStrength = 1.0f;
+        public float noiseRadius = 24.0f;
+
+        public float soundVolume = 1.0f;
+        public float soundPitch = 1.8f;
+
+        public int particleCount = 12;
+    }
+
     public static class ActionNoise {
         public int eatingNoiseIntervalTicks = 12;
         public int dropScanIntervalTicks = 5;
@@ -393,7 +418,7 @@ public class QuietPlaceConfig {
          * If true, sneaking players can carefully approach/disarm without triggering it.
          */
         public boolean sneakingPlayersAvoidTrigger = true;
-        public double triggerRadius = 0.75;
+        public double triggerRadius = 0.35;
 
         public int triggered0Ticks = 20;
         public int triggered1Ticks = 20;

@@ -1,6 +1,8 @@
 package net.droingo.aquietplace.registry;
 
 import net.droingo.aquietplace.AQuietPlace;
+import net.droingo.aquietplace.item.EmptySandBagItem;
+import net.droingo.aquietplace.item.SandBagItem;
 import net.droingo.aquietplace.item.SoundMeterItem;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.item.Item;
@@ -9,8 +11,7 @@ import net.minecraft.item.SpawnEggItem;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
-import net.droingo.aquietplace.item.SandBagItem;
-import net.droingo.aquietplace.item.EmptySandBagItem;
+import net.droingo.aquietplace.item.FeedbackEmitterItem;
 
 public final class ModItems {
     public static final Item DEATH_ANGEL_SPAWN_EGG = Registry.register(
@@ -28,6 +29,14 @@ public final class ModItems {
             "scrap_electronics",
             new Item(new Item.Settings())
     );
+
+    public static final Item FEEDBACK_EMITTER = registerItem(
+            "feedback_emitter",
+            new FeedbackEmitterItem(new Item.Settings()
+                    .maxCount(1)
+            )
+    );
+
     public static final Item SAND_BAG = registerItem(
             "sand_bag",
             new SandBagItem(new Item.Settings()
@@ -35,6 +44,7 @@ public final class ModItems {
                     .maxDamage(SandBagItem.MAX_SAND_USES)
             )
     );
+
     public static final Item EMPTY_SAND_BAG = registerItem(
             "empty_sand_bag",
             new EmptySandBagItem(new Item.Settings()
@@ -61,6 +71,7 @@ public final class ModItems {
 
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> {
             entries.add(SOUND_METER);
+            entries.add(FEEDBACK_EMITTER);
             entries.add(SAND_BAG);
             entries.add(EMPTY_SAND_BAG);
         });

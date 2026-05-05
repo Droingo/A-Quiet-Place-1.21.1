@@ -7,7 +7,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
-import net.minecraft.entity.ai.goal.SwimGoal;
+
 import net.minecraft.entity.ai.goal.WanderAroundFarGoal;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -51,6 +51,10 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, DeathA
             DeathAngelEntity.class,
             TrackedDataHandlerRegistry.BOOLEAN
     );
+    private static final TrackedData<Integer> HIGH_PITCH_REACTION_STATE = DataTracker.registerData(
+            DeathAngelEntity.class,
+            TrackedDataHandlerRegistry.INTEGER
+    );
 
     private static final TrackedData<Boolean> HEAR_REACTION_LEFT = DataTracker.registerData(
             DeathAngelEntity.class,
@@ -78,6 +82,9 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, DeathA
     private static final RawAnimation WALK_ANIMATION = RawAnimation.begin().thenLoop("WALK");
     private static final RawAnimation RUN_ANIMATION = RawAnimation.begin().thenLoop("RUN");
 
+    private static final RawAnimation HIGH_PITCH_STUN_ANIMATION = RawAnimation.begin()
+            .thenLoop("animation.death_angel.high_pitch_stun");
+
     private static final RawAnimation HEAR_LEFT_ANIMATION = RawAnimation.begin().thenPlay("HearLeft");
     private static final RawAnimation HEAR_RIGHT_ANIMATION = RawAnimation.begin().thenPlay("HearRight");
 
@@ -87,10 +94,22 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, DeathA
     private final AnimatableInstanceCache geoCache = GeckoLibUtil.createInstanceCache(this);
     private final ClimberComponent climberComponent = new ClimberComponent(this);
 
+    private static final int HIGH_PITCH_STATE_NONE = 0;
+    private static final int HIGH_PITCH_STATE_STUNNED = 1;
+    private static final int HIGH_PITCH_STATE_FLEEING = 2;
+    private static final int HIGH_PITCH_STATE_LEAPING = 3;
+
+    private int highPitchStunTicks;
+    private int highPitchFleeTicks;
+    private int highPitchLeapDespawnTicks;
+    private Vec3d highPitchSourcePos;
+
     private int hearReactionTicks;
     private int attackAnimationTicks;
     private int runAttackAnimationTicks;
     private int attackCooldownTicks;
+
+
 
     private int idleListenCooldownTicks;
     private int idleBreathCooldownTicks;
@@ -142,13 +161,14 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, DeathA
         builder.add(ATTACK_ANIMATION_ACTIVE, false);
         builder.add(RUN_ATTACK_ANIMATION_ACTIVE, false);
         builder.add(CHASING_NOISY_TARGET, false);
+        builder.add(HIGH_PITCH_REACTION_STATE, HIGH_PITCH_STATE_NONE);
            }
 
     @Override
     protected void initGoals() {
         QuietPlaceConfig.DeathAngel config = QuietPlaceConfig.get().deathAngel;
 
-        this.goalSelector.add(0, new SwimGoal(this));
+
 
         this.goalSelector.add(1, new DeathAngelAttackGoal(this));
         this.goalSelector.add(2, new ChaseNoisyTargetGoal(this, config.chaseSpeed));
@@ -166,6 +186,11 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, DeathA
         super.tick();
         ClimberHelper.tickClimber(this);
         ClimberHelper.livingTickClimber(this);
+
+        if (!this.getWorld().isClient() && this.isHighPitchReacting()) {
+            tickHighPitchReaction();
+            return;
+        }
 
         if (!this.getWorld().isClient()) {
             tickHearReaction();
@@ -736,11 +761,206 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, DeathA
         }
     }
 
+    public void stunFromHighPitch(int durationTicks, Vec3d sourcePos) {
+        if (durationTicks <= 0) {
+            return;
+        }
+
+        this.highPitchStunTicks = Math.max(this.highPitchStunTicks, durationTicks);
+        this.highPitchFleeTicks = 0;
+        this.highPitchLeapDespawnTicks = 0;
+        this.highPitchSourcePos = sourcePos;
+
+        this.dataTracker.set(HIGH_PITCH_REACTION_STATE, HIGH_PITCH_STATE_STUNNED);
+
+        this.clearHuntAndSearchMemory();
+        this.suppressHearReaction(durationTicks + 60);
+
+        this.getNavigation().stop();
+        this.setTarget(null);
+        this.setVelocity(Vec3d.ZERO);
+        this.velocityDirty = true;
+    }
+
+    public boolean isHighPitchStunned() {
+        return this.highPitchStunTicks > 0;
+    }
+
+    private boolean isHighPitchFleeing() {
+        return this.highPitchFleeTicks > 0;
+    }
+
+    private boolean isHighPitchLeapingAway() {
+        return this.highPitchLeapDespawnTicks > 0;
+    }
+
+    private boolean isHighPitchReacting() {
+        return isHighPitchStunned() || isHighPitchFleeing() || isHighPitchLeapingAway();
+    }
+
+    private boolean isHighPitchStunnedClientSynced() {
+        return this.dataTracker.get(HIGH_PITCH_REACTION_STATE) == HIGH_PITCH_STATE_STUNNED;
+    }
+
+    private void tickHighPitchReaction() {
+        if (isHighPitchStunned()) {
+            tickHighPitchStun();
+            return;
+        }
+
+        if (isHighPitchFleeing()) {
+            tickHighPitchFlee();
+            return;
+        }
+
+        if (isHighPitchLeapingAway()) {
+            tickHighPitchLeapDespawn();
+        }
+    }
+
+    private void tickHighPitchStun() {
+        this.highPitchStunTicks--;
+
+        this.clearHuntAndSearchMemory();
+        this.getNavigation().stop();
+        this.setTarget(null);
+        this.setVelocity(Vec3d.ZERO);
+        this.velocityDirty = true;
+
+        if (this.highPitchStunTicks <= 0) {
+            this.highPitchStunTicks = 0;
+            beginHighPitchFlee();
+        }
+    }
+
+    private void beginHighPitchFlee() {
+        this.highPitchFleeTicks = 20;
+        this.dataTracker.set(HIGH_PITCH_REACTION_STATE, HIGH_PITCH_STATE_FLEEING);
+
+        this.clearHuntAndSearchMemory();
+        this.getNavigation().stop();
+        this.setTarget(null);
+    }
+
+    private void tickHighPitchFlee() {
+        this.highPitchFleeTicks--;
+
+        Vec3d fleeDirection = getHighPitchFleeDirection();
+
+        this.getNavigation().stop();
+        this.setTarget(null);
+
+        this.setVelocity(
+                fleeDirection.x * 0.70,
+                this.getVelocity().y,
+                fleeDirection.z * 0.70
+        );
+
+        faceDirection(fleeDirection);
+
+        this.velocityDirty = true;
+        this.movementAnimationGraceTicks = Math.max(this.movementAnimationGraceTicks, 8);
+
+        if (this.highPitchFleeTicks <= 0) {
+            this.highPitchFleeTicks = 0;
+            beginHighPitchEscapeLeap(fleeDirection);
+        }
+    }
+
+    private void beginHighPitchEscapeLeap(Vec3d fleeDirection) {
+        this.dataTracker.set(HIGH_PITCH_REACTION_STATE, HIGH_PITCH_STATE_LEAPING);
+
+        this.setVelocity(
+                fleeDirection.x * 1.65,
+                0.95,
+                fleeDirection.z * 1.65
+        );
+
+        this.velocityDirty = true;
+        this.fallDistance = 0.0f;
+        this.highPitchLeapDespawnTicks = 14;
+
+        faceDirection(fleeDirection);
+        this.movementAnimationGraceTicks = Math.max(this.movementAnimationGraceTicks, 18);
+
+        if (this.getWorld() instanceof ServerWorld serverWorld) {
+            serverWorld.spawnParticles(
+                    ParticleTypes.SONIC_BOOM,
+                    this.getX(),
+                    this.getY() + 1.0,
+                    this.getZ(),
+                    1,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0
+            );
+        }
+    }
+
+    private void tickHighPitchLeapDespawn() {
+        this.highPitchLeapDespawnTicks--;
+
+        this.clearHuntAndSearchMemory();
+        this.getNavigation().stop();
+        this.setTarget(null);
+
+        if (this.highPitchLeapDespawnTicks <= 0) {
+            this.dataTracker.set(HIGH_PITCH_REACTION_STATE, HIGH_PITCH_STATE_NONE);
+            this.discard();
+        }
+    }
+
+    private Vec3d getHighPitchFleeDirection() {
+        Vec3d source = this.highPitchSourcePos;
+
+        if (source == null) {
+            Vec3d fallback = this.getRotationVec(1.0f);
+            Vec3d flatFallback = new Vec3d(fallback.x, 0.0, fallback.z);
+
+            if (flatFallback.lengthSquared() < 0.001) {
+                return new Vec3d(0.0, 0.0, 1.0);
+            }
+
+            return flatFallback.normalize();
+        }
+
+        Vec3d away = this.getPos().subtract(source);
+        Vec3d flatAway = new Vec3d(away.x, 0.0, away.z);
+
+        if (flatAway.lengthSquared() < 0.001) {
+            Vec3d look = this.getRotationVec(1.0f);
+            flatAway = new Vec3d(look.x, 0.0, look.z);
+        }
+
+        if (flatAway.lengthSquared() < 0.001) {
+            return new Vec3d(0.0, 0.0, 1.0);
+        }
+
+        return flatAway.normalize();
+    }
+
+    private void faceDirection(Vec3d direction) {
+        if (direction.lengthSquared() < 0.001) {
+            return;
+        }
+
+        float yaw = (float) (MathHelper.atan2(direction.z, direction.x) * 180.0F / Math.PI) - 90.0F;
+
+        this.setYaw(yaw);
+        this.bodyYaw = yaw;
+        this.headYaw = yaw;
+
+        this.prevYaw = yaw;
+        this.prevBodyYaw = yaw;
+        this.prevHeadYaw = yaw;
+    }
+
 
     @Override
     protected EntityNavigation createNavigation(World world) {
         ClimberPathNavigator<DeathAngelEntity> navigator = new ClimberPathNavigator<>(this, world, false);
-        navigator.setCanSwim(true);
+        navigator.setCanSwim(false);
         return navigator;
     }
 
@@ -789,6 +1009,12 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, DeathA
         if (yRot != null) {
             this.setYaw(yRot);
         }
+    }
+
+    @Override
+    public boolean handleFallDamage(float fallDistance, float damageMultiplier, DamageSource damageSource) {
+        this.fallDistance = 0.0f;
+        return false;
     }
 
     @Override
@@ -1084,6 +1310,10 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, DeathA
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new AnimationController<>(this, "movement_controller", 5, state -> {
             if (this.isRunAttackAnimationActive()) {
+
+                if (this.isHighPitchStunnedClientSynced()) {
+                    return state.setAndContinue(HIGH_PITCH_STUN_ANIMATION);
+                }
                 return state.setAndContinue(RUN_ATTACK_ANIMATION);
             }
 

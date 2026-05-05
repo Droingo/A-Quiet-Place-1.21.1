@@ -95,6 +95,36 @@ public final class AQuietPlaceCommands {
                                         .executes(context -> sendConfigStatus(context.getSource()))
                                 )
 
+                                .then(literal("difficulty")
+                                        .then(literal("easy")
+                                                .executes(context -> setDifficultyPreset(
+                                                        context.getSource(),
+                                                        DifficultyPreset.EASY
+                                                ))
+                                        )
+
+                                        .then(literal("normal")
+                                                .executes(context -> setDifficultyPreset(
+                                                        context.getSource(),
+                                                        DifficultyPreset.NORMAL
+                                                ))
+                                        )
+
+                                        .then(literal("hard")
+                                                .executes(context -> setDifficultyPreset(
+                                                        context.getSource(),
+                                                        DifficultyPreset.HARD
+                                                ))
+                                        )
+
+                                        .then(literal("nightmare")
+                                                .executes(context -> setDifficultyPreset(
+                                                        context.getSource(),
+                                                        DifficultyPreset.NIGHTMARE
+                                                ))
+                                        )
+                                )
+
                                 .then(literal("hunt_creative_players")
                                         .then(argument("enabled", BoolArgumentType.bool())
                                                 .executes(context -> setHuntCreativePlayers(
@@ -304,6 +334,239 @@ public final class AQuietPlaceCommands {
         );
     }
 
+    private static int setDifficultyPreset(ServerCommandSource source, DifficultyPreset preset) {
+        QuietPlaceConfig config = QuietPlaceConfig.get();
+
+        applyDeathAngelPreset(config, preset);
+        applyPlayerNoisePreset(config, preset);
+        applyVoicePreset(config, preset);
+        applyTrapPreset(config, preset);
+
+        QuietPlaceConfig.save();
+
+        sendFeedback(source, "Difficulty set to " + preset.displayName);
+        sendFeedback(source, "Saved to config/aquietplace.json");
+
+        return 1;
+    }
+
+    private static void applyDeathAngelPreset(QuietPlaceConfig config, DifficultyPreset preset) {
+        switch (preset) {
+            case EASY -> {
+                config.deathAngel.maxHealth = 65.0;
+                config.deathAngel.baseMovementSpeed = 0.26;
+                config.deathAngel.attackDamage = 8.0;
+                config.deathAngel.followRange = 36.0;
+                config.deathAngel.wanderSpeed = 0.70;
+                config.deathAngel.investigateSpeed = 0.95;
+                config.deathAngel.searchSpeed = 1.05;
+                config.deathAngel.chaseSpeed = 1.55;
+                config.deathAngel.runAttackSpeed = 1.45;
+
+                config.deathAngel.huntStrengthThreshold = 0.90f;
+                config.deathAngel.huntRadiusThreshold = 15.0f;
+                config.deathAngel.dangerousStrengthThreshold = 1.0f;
+                config.deathAngel.dangerousRadiusThreshold = 22.0f;
+                config.deathAngel.veryLoudStrengthThreshold = 1.0f;
+                config.deathAngel.veryLoudRadiusThreshold = 28.0f;
+            }
+
+            case NORMAL -> {
+                config.deathAngel.maxHealth = 80.0;
+                config.deathAngel.baseMovementSpeed = 0.30;
+                config.deathAngel.attackDamage = 12.0;
+                config.deathAngel.followRange = 48.0;
+                config.deathAngel.wanderSpeed = 0.85;
+                config.deathAngel.investigateSpeed = 1.15;
+                config.deathAngel.searchSpeed = 1.25;
+                config.deathAngel.chaseSpeed = 1.95;
+                config.deathAngel.runAttackSpeed = 1.75;
+
+                config.deathAngel.huntStrengthThreshold = 0.8f;
+                config.deathAngel.huntRadiusThreshold = 12.0f;
+                config.deathAngel.dangerousStrengthThreshold = 0.95f;
+                config.deathAngel.dangerousRadiusThreshold = 18.0f;
+                config.deathAngel.veryLoudStrengthThreshold = 1.0f;
+                config.deathAngel.veryLoudRadiusThreshold = 22.0f;
+            }
+
+            case HARD -> {
+                config.deathAngel.maxHealth = 95.0;
+                config.deathAngel.baseMovementSpeed = 0.33;
+                config.deathAngel.attackDamage = 16.0;
+                config.deathAngel.followRange = 60.0;
+                config.deathAngel.wanderSpeed = 0.95;
+                config.deathAngel.investigateSpeed = 1.30;
+                config.deathAngel.searchSpeed = 1.45;
+                config.deathAngel.chaseSpeed = 2.20;
+                config.deathAngel.runAttackSpeed = 2.00;
+
+                config.deathAngel.huntStrengthThreshold = 0.65f;
+                config.deathAngel.huntRadiusThreshold = 9.0f;
+                config.deathAngel.dangerousStrengthThreshold = 0.85f;
+                config.deathAngel.dangerousRadiusThreshold = 14.0f;
+                config.deathAngel.veryLoudStrengthThreshold = 0.95f;
+                config.deathAngel.veryLoudRadiusThreshold = 18.0f;
+            }
+
+            case NIGHTMARE -> {
+                config.deathAngel.maxHealth = 120.0;
+                config.deathAngel.baseMovementSpeed = 0.36;
+                config.deathAngel.attackDamage = 20.0;
+                config.deathAngel.followRange = 72.0;
+                config.deathAngel.wanderSpeed = 1.05;
+                config.deathAngel.investigateSpeed = 1.45;
+                config.deathAngel.searchSpeed = 1.65;
+                config.deathAngel.chaseSpeed = 2.45;
+                config.deathAngel.runAttackSpeed = 2.20;
+
+                config.deathAngel.huntStrengthThreshold = 0.50f;
+                config.deathAngel.huntRadiusThreshold = 7.0f;
+                config.deathAngel.dangerousStrengthThreshold = 0.75f;
+                config.deathAngel.dangerousRadiusThreshold = 11.0f;
+                config.deathAngel.veryLoudStrengthThreshold = 0.85f;
+                config.deathAngel.veryLoudRadiusThreshold = 15.0f;
+            }
+        }
+    }
+
+    private static void applyPlayerNoisePreset(QuietPlaceConfig config, DifficultyPreset preset) {
+        switch (preset) {
+            case EASY -> {
+                config.playerNoise.walkRadius = 5.0f;
+                config.playerNoise.sprintRadius = 18.0f;
+                config.playerNoise.sneakRadius = 1.25f;
+                config.playerNoise.jumpRadius = 8.0f;
+                config.playerNoise.landingMaxRadius = 28.0f;
+
+                config.playerNoise.walkStrength = 0.45f;
+                config.playerNoise.sprintStrength = 0.90f;
+                config.playerNoise.sneakStrength = 0.20f;
+                config.playerNoise.jumpStrength = 0.60f;
+                config.playerNoise.landingMaxStrength = 0.90f;
+            }
+
+            case NORMAL -> {
+                config.playerNoise.walkRadius = 7.0f;
+                config.playerNoise.sprintRadius = 26.0f;
+                config.playerNoise.sneakRadius = 1.75f;
+                config.playerNoise.jumpRadius = 12.0f;
+                config.playerNoise.landingMaxRadius = 40.0f;
+
+                config.playerNoise.walkStrength = 0.50f;
+                config.playerNoise.sprintStrength = 1.0f;
+                config.playerNoise.sneakStrength = 0.25f;
+                config.playerNoise.jumpStrength = 0.70f;
+                config.playerNoise.landingMaxStrength = 1.0f;
+            }
+
+            case HARD -> {
+                config.playerNoise.walkRadius = 9.5f;
+                config.playerNoise.sprintRadius = 36.0f;
+                config.playerNoise.sneakRadius = 2.75f;
+                config.playerNoise.jumpRadius = 17.0f;
+                config.playerNoise.landingMaxRadius = 56.0f;
+
+                config.playerNoise.walkStrength = 0.60f;
+                config.playerNoise.sprintStrength = 1.0f;
+                config.playerNoise.sneakStrength = 0.30f;
+                config.playerNoise.jumpStrength = 0.82f;
+                config.playerNoise.landingMaxStrength = 1.0f;
+            }
+
+            case NIGHTMARE -> {
+                config.playerNoise.walkRadius = 12.0f;
+                config.playerNoise.sprintRadius = 52.0f;
+                config.playerNoise.sneakRadius = 4.0f;
+                config.playerNoise.jumpRadius = 24.0f;
+                config.playerNoise.landingMaxRadius = 80.0f;
+
+                config.playerNoise.walkStrength = 0.70f;
+                config.playerNoise.sprintStrength = 1.0f;
+                config.playerNoise.sneakStrength = 0.40f;
+                config.playerNoise.jumpStrength = 0.95f;
+                config.playerNoise.landingMaxStrength = 1.0f;
+            }
+        }
+    }
+
+    private static void applyVoicePreset(QuietPlaceConfig config, DifficultyPreset preset) {
+        switch (preset) {
+            case EASY -> {
+                config.voiceChatNoise.minimumRms = 0.020f;
+                config.voiceChatNoise.rmsStrengthMultiplier = 7.0f;
+                config.voiceChatNoise.maximumRadius = 28.0f;
+                config.voiceChatNoise.whisperRadiusMultiplier = 0.40f;
+                config.voiceChatNoise.whisperStrengthMultiplier = 0.55f;
+            }
+
+            case NORMAL -> {
+                config.voiceChatNoise.minimumRms = 0.012f;
+                config.voiceChatNoise.rmsStrengthMultiplier = 9.5f;
+                config.voiceChatNoise.maximumRadius = 38.0f;
+                config.voiceChatNoise.whisperRadiusMultiplier = 0.50f;
+                config.voiceChatNoise.whisperStrengthMultiplier = 0.65f;
+            }
+
+            case HARD -> {
+                config.voiceChatNoise.minimumRms = 0.008f;
+                config.voiceChatNoise.rmsStrengthMultiplier = 13.0f;
+                config.voiceChatNoise.maximumRadius = 50.0f;
+                config.voiceChatNoise.whisperRadiusMultiplier = 0.65f;
+                config.voiceChatNoise.whisperStrengthMultiplier = 0.75f;
+            }
+
+            case NIGHTMARE -> {
+                config.voiceChatNoise.minimumRms = 0.004f;
+                config.voiceChatNoise.rmsStrengthMultiplier = 17.0f;
+                config.voiceChatNoise.maximumRadius = 72.0f;
+                config.voiceChatNoise.whisperRadiusMultiplier = 0.80f;
+                config.voiceChatNoise.whisperStrengthMultiplier = 0.85f;
+            }
+        }
+    }
+
+    private static void applyTrapPreset(QuietPlaceConfig config, DifficultyPreset preset) {
+        switch (preset) {
+            case EASY -> {
+                config.glassBottleTrap.triggerRadius = 0.35;
+                config.glassBottleTrap.noiseRadius = 28.0f;
+                config.glassBottleTrap.noiseStrength = 0.90f;
+            }
+
+            case NORMAL -> {
+                config.glassBottleTrap.triggerRadius = 0.45;
+                config.glassBottleTrap.noiseRadius = 38.0f;
+                config.glassBottleTrap.noiseStrength = 1.0f;
+            }
+
+            case HARD -> {
+                config.glassBottleTrap.triggerRadius = 0.55;
+                config.glassBottleTrap.noiseRadius = 52.0f;
+                config.glassBottleTrap.noiseStrength = 1.0f;
+            }
+
+            case NIGHTMARE -> {
+                config.glassBottleTrap.triggerRadius = 0.70;
+                config.glassBottleTrap.noiseRadius = 72.0f;
+                config.glassBottleTrap.noiseStrength = 1.0f;
+            }
+        }
+    }
+
+    private enum DifficultyPreset {
+        EASY("Easy"),
+        NORMAL("Normal"),
+        HARD("Hard"),
+        NIGHTMARE("Nightmare");
+
+        private final String displayName;
+
+        DifficultyPreset(String displayName) {
+            this.displayName = displayName;
+        }
+    }
+
     private static int setDebugParticles(ServerCommandSource source, boolean enabled) {
         NoiseSystem.setDebugParticlesEnabled(enabled);
 
@@ -371,6 +634,13 @@ public final class AQuietPlaceCommands {
         sendFeedback(source, "Very loud radius threshold: " + config.deathAngel.veryLoudRadiusThreshold);
         sendFeedback(source, "Noise particles default: " + getEnabledText(config.debug.noiseParticlesEnabled));
         sendFeedback(source, "Noise logging default: " + getEnabledText(config.debug.noiseLoggingEnabled));
+        sendFeedback(source, "Walk radius: " + config.playerNoise.walkRadius);
+        sendFeedback(source, "Jump radius: " + config.playerNoise.jumpRadius);
+        sendFeedback(source, "Voice max radius: " + config.voiceChatNoise.maximumRadius);
+        sendFeedback(source, "Glass bottle trigger radius: " + config.glassBottleTrap.triggerRadius);
+        sendFeedback(source, "Glass bottle noise radius: " + config.glassBottleTrap.noiseRadius);
+        sendFeedback(source, "Attack damage: " + config.deathAngel.attackDamage);
+        sendFeedback(source, "Glass bottle trigger radius: " + config.glassBottleTrap.triggerRadius);
 
         return 1;
     }
