@@ -77,19 +77,23 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, DeathA
             DeathAngelEntity.class,
             TrackedDataHandlerRegistry.BOOLEAN
     );
+    private static final TrackedData<Boolean> IDLE_LISTEN_ANIMATION_ACTIVE = DataTracker.registerData(
+            DeathAngelEntity.class,
+            TrackedDataHandlerRegistry.BOOLEAN
+    );
 
     private static final RawAnimation IDLE_ANIMATION = RawAnimation.begin().thenLoop("IDLE");
     private static final RawAnimation WALK_ANIMATION = RawAnimation.begin().thenLoop("WALK");
     private static final RawAnimation RUN_ANIMATION = RawAnimation.begin().thenLoop("RUN");
 
-    private static final RawAnimation HIGH_PITCH_STUN_ANIMATION = RawAnimation.begin()
-            .thenLoop("animation.death_angel.high_pitch_stun");
-
+    private static final RawAnimation LISTEN_ANIMATION = RawAnimation.begin().thenPlay("LISTEN");
     private static final RawAnimation HEAR_LEFT_ANIMATION = RawAnimation.begin().thenPlay("HearLeft");
     private static final RawAnimation HEAR_RIGHT_ANIMATION = RawAnimation.begin().thenPlay("HearRight");
 
     private static final RawAnimation ATTACK_ANIMATION = RawAnimation.begin().thenPlay("ATTACK");
     private static final RawAnimation RUN_ATTACK_ANIMATION = RawAnimation.begin().thenPlay("RUNATTACK");
+
+    private static final RawAnimation HIGH_PITCH_STUN_ANIMATION = RawAnimation.begin().thenPlay("stun");
 
     private final AnimatableInstanceCache geoCache = GeckoLibUtil.createInstanceCache(this);
     private final ClimberComponent climberComponent = new ClimberComponent(this);
@@ -113,6 +117,7 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, DeathA
 
     private int idleListenCooldownTicks;
     private int idleBreathCooldownTicks;
+    private int idleListenAnimationTicks;
     private int suppressHearReactionTicks;
     private UUID noisyTargetUuid;
     private int noisyTargetMemoryTicks;
@@ -161,6 +166,7 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, DeathA
         builder.add(ATTACK_ANIMATION_ACTIVE, false);
         builder.add(RUN_ATTACK_ANIMATION_ACTIVE, false);
         builder.add(CHASING_NOISY_TARGET, false);
+        builder.add(IDLE_LISTEN_ANIMATION_ACTIVE, false);
         builder.add(HIGH_PITCH_REACTION_STATE, HIGH_PITCH_STATE_NONE);
            }
 
@@ -194,6 +200,7 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, DeathA
 
         if (!this.getWorld().isClient()) {
             tickHearReaction();
+            tickIdleListenAnimation();
             tickAttackAnimation();
             tickRunAttackAnimation();
             tickAttackCooldown();
@@ -292,6 +299,35 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, DeathA
 
     private void resetVerticalChaseLeapTracking() {
         this.verticalChaseLeapChargeTicks = 0;
+    }
+    private void startIdleListenAnimation() {
+        this.idleListenAnimationTicks = 20 * 5;
+        this.dataTracker.set(IDLE_LISTEN_ANIMATION_ACTIVE, true);
+
+        if (!this.getWorld().isClient()) {
+            playDeathAngelSound(
+                    ModSounds.DEATH_ANGEL_LISTEN_TWITCH,
+                    0.65f,
+                    0.85f + this.getRandom().nextFloat() * 0.25f
+            );
+        }
+    }
+
+    private void tickIdleListenAnimation() {
+        if (this.idleListenAnimationTicks <= 0) {
+            this.dataTracker.set(IDLE_LISTEN_ANIMATION_ACTIVE, false);
+            return;
+        }
+
+        this.idleListenAnimationTicks--;
+
+        if (this.idleListenAnimationTicks <= 0) {
+            this.dataTracker.set(IDLE_LISTEN_ANIMATION_ACTIVE, false);
+        }
+    }
+
+    private boolean isIdleListenAnimationActive() {
+        return this.dataTracker.get(IDLE_LISTEN_ANIMATION_ACTIVE);
     }
 
     private void leapTowardVerticalTarget(Entity target, double verticalDifference) {
@@ -676,6 +712,13 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, DeathA
             return;
         }
 
+        int choice = this.getRandom().nextInt(3);
+
+        if (choice == 0) {
+            startIdleListenAnimation();
+            return;
+        }
+
         double angle = this.getRandom().nextDouble() * Math.PI * 2.0;
         double distance = 4.0 + this.getRandom().nextDouble() * 6.0;
 
@@ -772,6 +815,19 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, DeathA
         this.highPitchSourcePos = sourcePos;
 
         this.dataTracker.set(HIGH_PITCH_REACTION_STATE, HIGH_PITCH_STATE_STUNNED);
+        this.dataTracker.set(CHASING_NOISY_TARGET, false);
+        this.dataTracker.set(HEAR_REACTION_ACTIVE, false);
+        this.dataTracker.set(IDLE_LISTEN_ANIMATION_ACTIVE, false);
+        this.dataTracker.set(ATTACK_ANIMATION_ACTIVE, false);
+        this.dataTracker.set(RUN_ATTACK_ANIMATION_ACTIVE, false);
+
+        this.hearReactionTicks = 0;
+        this.idleListenAnimationTicks = 0;
+        this.attackAnimationTicks = 0;
+        this.runAttackAnimationTicks = 0;
+        this.movementAnimationGraceTicks = 0;
+
+        this.triggerAnim("movement_controller", "high_pitch_stun");
 
         this.clearHuntAndSearchMemory();
         this.suppressHearReaction(durationTicks + 60);
@@ -801,6 +857,20 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, DeathA
     private boolean isHighPitchStunnedClientSynced() {
         return this.dataTracker.get(HIGH_PITCH_REACTION_STATE) == HIGH_PITCH_STATE_STUNNED;
     }
+    private boolean isHighPitchFleeingClientSynced() {
+        return this.dataTracker.get(HIGH_PITCH_REACTION_STATE) == HIGH_PITCH_STATE_FLEEING;
+    }
+
+    private boolean isHighPitchLeapingClientSynced() {
+        return this.dataTracker.get(HIGH_PITCH_REACTION_STATE) == HIGH_PITCH_STATE_LEAPING;
+    }
+
+    private boolean isHighPitchReactingClientSynced() {
+        int state = this.dataTracker.get(HIGH_PITCH_REACTION_STATE);
+        return state == HIGH_PITCH_STATE_STUNNED
+                || state == HIGH_PITCH_STATE_FLEEING
+                || state == HIGH_PITCH_STATE_LEAPING;
+    }
 
     private void tickHighPitchReaction() {
         if (isHighPitchStunned()) {
@@ -821,6 +891,7 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, DeathA
     private void tickHighPitchStun() {
         this.highPitchStunTicks--;
 
+        clearConflictingHighPitchAnimations();
         this.clearHuntAndSearchMemory();
         this.getNavigation().stop();
         this.setTarget(null);
@@ -834,10 +905,12 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, DeathA
     }
 
     private void beginHighPitchFlee() {
-        this.highPitchFleeTicks = 20;
+        this.highPitchFleeTicks = 45;
         this.dataTracker.set(HIGH_PITCH_REACTION_STATE, HIGH_PITCH_STATE_FLEEING);
 
+        clearConflictingHighPitchAnimations();
         this.clearHuntAndSearchMemory();
+        this.suppressHearReaction(80);
         this.getNavigation().stop();
         this.setTarget(null);
     }
@@ -847,19 +920,22 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, DeathA
 
         Vec3d fleeDirection = getHighPitchFleeDirection();
 
+        clearConflictingHighPitchAnimations();
+        this.clearHuntAndSearchMemory();
+        this.suppressHearReaction(20);
         this.getNavigation().stop();
         this.setTarget(null);
 
         this.setVelocity(
-                fleeDirection.x * 0.70,
+                fleeDirection.x * 0.82,
                 this.getVelocity().y,
-                fleeDirection.z * 0.70
+                fleeDirection.z * 0.82
         );
 
         faceDirection(fleeDirection);
 
         this.velocityDirty = true;
-        this.movementAnimationGraceTicks = Math.max(this.movementAnimationGraceTicks, 8);
+        this.movementAnimationGraceTicks = Math.max(this.movementAnimationGraceTicks, 12);
 
         if (this.highPitchFleeTicks <= 0) {
             this.highPitchFleeTicks = 0;
@@ -867,21 +943,39 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, DeathA
         }
     }
 
+    private void clearConflictingHighPitchAnimations() {
+        this.dataTracker.set(HEAR_REACTION_ACTIVE, false);
+        this.dataTracker.set(IDLE_LISTEN_ANIMATION_ACTIVE, false);
+        this.dataTracker.set(ATTACK_ANIMATION_ACTIVE, false);
+        this.dataTracker.set(RUN_ATTACK_ANIMATION_ACTIVE, false);
+
+        this.hearReactionTicks = 0;
+        this.idleListenAnimationTicks = 0;
+        this.attackAnimationTicks = 0;
+        this.runAttackAnimationTicks = 0;
+    }
+
     private void beginHighPitchEscapeLeap(Vec3d fleeDirection) {
         this.dataTracker.set(HIGH_PITCH_REACTION_STATE, HIGH_PITCH_STATE_LEAPING);
 
+        clearConflictingHighPitchAnimations();
+        this.clearHuntAndSearchMemory();
+        this.suppressHearReaction(60);
+        this.getNavigation().stop();
+        this.setTarget(null);
+
         this.setVelocity(
-                fleeDirection.x * 1.65,
-                0.95,
-                fleeDirection.z * 1.65
+                fleeDirection.x * 1.85,
+                1.05,
+                fleeDirection.z * 1.85
         );
 
         this.velocityDirty = true;
         this.fallDistance = 0.0f;
-        this.highPitchLeapDespawnTicks = 14;
+        this.highPitchLeapDespawnTicks = 18;
 
         faceDirection(fleeDirection);
-        this.movementAnimationGraceTicks = Math.max(this.movementAnimationGraceTicks, 18);
+        this.movementAnimationGraceTicks = Math.max(this.movementAnimationGraceTicks, 24);
 
         if (this.getWorld() instanceof ServerWorld serverWorld) {
             serverWorld.spawnParticles(
@@ -901,9 +995,13 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, DeathA
     private void tickHighPitchLeapDespawn() {
         this.highPitchLeapDespawnTicks--;
 
+        clearConflictingHighPitchAnimations();
         this.clearHuntAndSearchMemory();
+        this.suppressHearReaction(20);
         this.getNavigation().stop();
         this.setTarget(null);
+
+        this.movementAnimationGraceTicks = Math.max(this.movementAnimationGraceTicks, 12);
 
         if (this.highPitchLeapDespawnTicks <= 0) {
             this.dataTracker.set(HIGH_PITCH_REACTION_STATE, HIGH_PITCH_STATE_NONE);
@@ -1309,11 +1407,19 @@ public class DeathAngelEntity extends HostileEntity implements GeoEntity, DeathA
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new AnimationController<>(this, "movement_controller", 5, state -> {
-            if (this.isRunAttackAnimationActive()) {
+            if (this.isHighPitchStunnedClientSynced()) {
+                return state.setAndContinue(HIGH_PITCH_STUN_ANIMATION);
+            }
 
-                if (this.isHighPitchStunnedClientSynced()) {
-                    return state.setAndContinue(HIGH_PITCH_STUN_ANIMATION);
-                }
+            if (this.isHighPitchFleeingClientSynced() || this.isHighPitchLeapingClientSynced()) {
+                return state.setAndContinue(RUN_ANIMATION);
+            }
+
+            if (this.isIdleListenAnimationActive()) {
+                return state.setAndContinue(LISTEN_ANIMATION);
+            }
+
+            if (this.isRunAttackAnimationActive()) {
                 return state.setAndContinue(RUN_ATTACK_ANIMATION);
             }
 
