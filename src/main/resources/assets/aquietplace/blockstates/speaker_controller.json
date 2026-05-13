@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "open=false": {
+      "model": "aquietplace:block/speaker_controller_closed"
+    },
+    "open=true": {
+      "model": "aquietplace:block/speaker_controller_open"
+    }
+  }
+}

@@ -84,5 +84,12 @@
       "aquietplace:entity/death_angel/listen_twitch_1",
       "aquietplace:entity/death_angel/listen_twitch_2"
     ]
+  },
+
+  "item.high_pitch_stun": {
+    "subtitle": "subtitles.aquietplace.high_pitch_stun",
+    "sounds": [
+      "aquietplace:item/high_pitch_stun"
+    ]
   }
 }

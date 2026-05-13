@@ -1,6 +1,7 @@
 package net.droingo.aquietplace;
 
 import net.droingo.aquietplace.command.AQuietPlaceCommands;
+import net.droingo.aquietplace.item.FeedbackEmitterPulseManager;
 import net.droingo.aquietplace.network.ModNetworking;
 import net.droingo.aquietplace.noise.NoiseSystem;
 import net.droingo.aquietplace.noise.PlayerNoiseHandler;
@@ -36,6 +37,7 @@ public class AQuietPlace implements ModInitializer {
         ModItems.register();
         ModSounds.register();
         ModLootTableModifiers.register();
+        FeedbackEmitterPulseManager.register();
 
         NoiseSystem.initialize();
         PlayerNoiseHandler.register();

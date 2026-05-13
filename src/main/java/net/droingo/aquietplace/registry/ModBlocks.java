@@ -19,6 +19,9 @@ import net.droingo.aquietplace.block.NoisemakerBlock;
 import net.droingo.aquietplace.block.GlassBottleTrapBlock;
 import net.droingo.aquietplace.block.WaterfallNoiseBlock;
 import net.droingo.aquietplace.block.SandPathLayerBlock;
+import net.droingo.aquietplace.block.SpeakerControllerBlock;
+import net.droingo.aquietplace.block.SpeakerPoleBlock;
+import net.droingo.aquietplace.block.StunTrapBlock;
 
 public final class ModBlocks {
     public static final Block NEWSPAPER_SOUNDPROOFING = registerBlockWithItem(
@@ -61,6 +64,35 @@ public final class ModBlocks {
                     .strength(1.5f)
             )
     );
+    public static final Block SPEAKER_CONTROLLER = registerBlockWithItem(
+            "speaker_controller",
+            new SpeakerControllerBlock(AbstractBlock.Settings.copy(Blocks.IRON_BLOCK)
+                    .mapColor(MapColor.DEEPSLATE_GRAY)
+                    .sounds(BlockSoundGroup.METAL)
+                    .nonOpaque()
+                    .strength(2.0f, 6.0f)
+            )
+    );
+
+    public static final Block SPEAKER_POLE = registerBlockWithItem(
+            "speaker_pole",
+            new SpeakerPoleBlock(AbstractBlock.Settings.copy(Blocks.IRON_BARS)
+                    .mapColor(MapColor.DEEPSLATE_GRAY)
+                    .sounds(BlockSoundGroup.METAL)
+                    .nonOpaque()
+                    .strength(1.5f, 6.0f)
+            )
+    );
+
+    public static final Block STUN_TRAP = registerBlockWithItem(
+            "stun_trap",
+            new StunTrapBlock(AbstractBlock.Settings.copy(Blocks.IRON_BLOCK)
+                    .mapColor(MapColor.BLACK)
+                    .sounds(BlockSoundGroup.METAL)
+                    .nonOpaque()
+                    .strength(2.5f, 6.0f)
+            )
+    );
 
     private ModBlocks() {
     }
@@ -71,6 +103,9 @@ public final class ModBlocks {
             entries.add(NOISEMAKER);
             entries.add(GLASS_BOTTLE_TRAP);
             entries.add(WATERFALL_NOISE_BLOCK);
+            entries.add(SPEAKER_CONTROLLER);
+            entries.add(SPEAKER_POLE);
+            entries.add(STUN_TRAP);
             entries.add(SAND_PATH_LAYER);
         });
 

@@ -22,6 +22,8 @@ public final class ModSounds {
     public static final SoundEvent DEATH_ANGEL_INVESTIGATE_GROWL = registerSound("entity.death_angel.investigate_growl");
     public static final SoundEvent DEATH_ANGEL_LISTEN_TWITCH = registerSound("entity.death_angel.listen_twitch");
 
+    public static final SoundEvent HIGH_PITCH_STUN = registerSound("item.high_pitch_stun");
+
     private ModSounds() {
     }
 
